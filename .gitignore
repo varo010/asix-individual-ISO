@@ -1,0 +1,23 @@
+# Imágenes y discos de las VM (pesan GB y no son documentación)
+*.iso
+*.img
+*.ova
+*.ovf
+*.vdi
+*.vmdk
+*.vhd
+*.vhdx
+*.qcow2
+*.sav
+
+# Copias binarias y secretos
+*.backup
+*.rsc.enc
+*.key
+*.pem
+secretos/
+credenciales*
+
+# Notas privadas de trabajo
+00-ANALISIS.md
+notas/
