@@ -1,0 +1,36 @@
+# Comprobación SHA256 de las imágenes · 2026-11-15 16:02:37
+
+OK        chr-7.24.6.vdi.zip
+          calculado: 746a4975f70ed8d200f2c7fc8cfae370f727f7627d76bae583369ac5ed47faae
+          oficial:   746a4975f70ed8d200f2c7fc8cfae370f727f7627d76bae583369ac5ed47faae · origen: https://download.mikrotik.com/routeros/7.24.6/ (.sha256)
+OK        OPNsense-26.7-dvd-amd64.iso.bz2
+          calculado: 95cafedda6d5b22ce832e249dc2309110fbee19f813ad78cf28bb3d387186bfb
+          oficial:   95cafedda6d5b22ce832e249dc2309110fbee19f813ad78cf28bb3d387186bfb · origen: https://pkg.opnsense.org/releases/26.7/ (checksums-amd64.sha256)
+OK        OPNsense-26.7-dvd-amd64.iso · descomprimida sin error de CRC de un .bz2 comprobado
+OK        debian-13.7.0-amd64-netinst.iso
+          calculado: a7ef94ac2fb9a7fec454552abd629b7cc9d5155c886165a45649f5ce6167e355
+          oficial:   a7ef94ac2fb9a7fec454552abd629b7cc9d5155c886165a45649f5ce6167e355 · origen: https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/ (SHA256SUMS)
+OK        TrueNAS-SCALE-25.10.8.iso
+          calculado: af5c8cea73d6258429aa0cad4b1a30732bd85db36b1ce9ce14a55be8f419d7bc
+          oficial:   af5c8cea73d6258429aa0cad4b1a30732bd85db36b1ce9ce14a55be8f419d7bc · origen: https://download.truenas.com/TrueNAS-SCALE-Goldeye/25.10.8/ (.sha256)
+OK        proxmox-ve_9.2-1.iso
+          calculado: 4e88fe416df9b527624a175f24c9aa07c714d3332afb1ee3dbf3879573ef2c6c
+          oficial:   4e88fe416df9b527624a175f24c9aa07c714d3332afb1ee3dbf3879573ef2c6c · origen: https://enterprise.proxmox.com/iso/ (SHA256SUMS)
+OK        ubuntu-26.04.1-desktop-amd64.iso
+          calculado: 601e30fbf5d97759367c632e2c33630665039b7e2158fd068403da3ccf1bda1f
+          oficial:   601e30fbf5d97759367c632e2c33630665039b7e2158fd068403da3ccf1bda1f · origen: https://releases.ubuntu.com/26.04/ (SHA256SUMS)
+SIN HASH  26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso · origen: Centro de evaluación de Microsoft (go.microsoft.com → software-static.download.prss.microsoft.com, HTTPS)
+ACEPTADA  26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso · sin hash oficial; origen oficial por HTTPS, descarga completa
+          calculado: d0ef4502e350e3c6c53c15b1b3020d38a5ded011bf04998e950720ac8579b23d
+SIN HASH  w11.iso · origen: N/C: descargada antes de esta práctica; origen desconocido · NO SE USA
+
+Aprobadas (se ponen en las VM):
+  /home/batoi/ISOs/chr-7.24.6.vdi.zip
+  /home/batoi/ISOs/chr-7.24.6.vdi
+  /home/batoi/ISOs/OPNsense-26.7-dvd-amd64.iso.bz2
+  /home/batoi/ISOs/debian-13.7.0-amd64-netinst.iso
+  /home/batoi/Descargas/proxmox-ve_9.2-1.iso
+  /home/batoi/ISOs/OPNsense-26.7-dvd-amd64.iso
+  /home/batoi/ISOs/TrueNAS-SCALE-25.10.8.iso
+  /home/batoi/ISOs/ubuntu-26.04.1-desktop-amd64.iso
+  /home/batoi/ISOs/26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso

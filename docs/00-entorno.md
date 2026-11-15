@@ -27,20 +27,29 @@ Discos **dinámicos**: el tamaño es el máximo, pero solo ocupan lo que se escr
 
 | VM | Función | SO | vCPU | RAM | Disco | Red | Estado |
 |---|---|---|---|---|---|---|---|
-| `r-mikrotik` | Router alternativa 1 | MikroTik RouterOS CHR 7 | 1 | 256 MB | Imagen CHR (~128 MB) | NAT + LAN | Pendiente |
-| `r-opnsense` | Router alternativa 2 | OPNsense | 2 | 2 GB | 20 GB | NAT + LAN | Pendiente |
-| `r-nftables` | Router alternativa 3 | Debian 13 sin escritorio + nftables | 1 | 512 MB | 8 GB | NAT + LAN | Pendiente |
-| `nas-truenas` | NAS y copias | TrueNAS Community 25.10 | 2 | 8 GB | 20 GB sistema + 20 GB copias | LAN | Pendiente |
-| `pve1` | Nodo Proxmox 1 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Pendiente |
-| `pve2` | Nodo Proxmox 2 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Pendiente |
-| `srv-dc` | Dominio | Windows Server 2025 (evaluación 180 días) | 2 | 4 GB | 50 GB | LAN | Pendiente |
-| `srv-linux` | Servidor de infraestructura (y RAID de la T6) | Debian 13 sin escritorio | 1 | 1 GB | 10 GB + 4 discos de 1 GB | LAN | Pendiente |
-| `cli-win11` | Cliente Windows | Windows 11 Pro | 2 | 4 GB | 64 GB (TPM 2.0, UEFI, Secure Boot) | LAN | Pendiente |
-| `cli-linux` | Cliente GNU/Linux | Ubuntu Desktop 26.04 LTS | 2 | 3 GB | 25 GB | LAN | Pendiente |
+| `r-mikrotik` | Router alternativa 1 | MikroTik RouterOS CHR 7.24.6 | 1 | 256 MB | Imagen CHR (~128 MB) | NAT + LAN | Creada (disco CHR ya listo) |
+| `r-opnsense` | Router alternativa 2 | OPNsense 26.7 | 2 | 2 GB | 20 GB | NAT + LAN | Creada; ISO comprobada puesta; sin instalar |
+| `r-nftables` | Router alternativa 3 | Debian 13.7 sin escritorio + nftables | 1 | 512 MB | 8 GB | NAT + LAN | Creada; ISO comprobada puesta; sin instalar |
+| `nas-truenas` | NAS y copias | TrueNAS Community 25.10.8 | 2 | 8 GB | 20 GB sistema + 20 GB copias | LAN | Creada; ISO comprobada puesta; sin instalar |
+| `pve1` | Nodo Proxmox 1 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
+| `pve2` | Nodo Proxmox 2 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
+| `srv-dc` | Dominio | Windows Server 2025 (evaluación 180 días) | 2 | 4 GB | 50 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
+| `srv-linux` | Servidor de infraestructura (y RAID de la T6) | Debian 13.7 sin escritorio | 1 | 1 GB | 10 GB + 4 discos de 1 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
+| `cli-win11` | Cliente Windows | Windows 11 Pro | 2 | 4 GB | 64 GB (TPM 2.0, UEFI, Secure Boot) | LAN | Creada; **falta ISO de W11** (ver abajo) |
+| `cli-linux` | Cliente GNU/Linux | Ubuntu Desktop 26.04.1 LTS | 2 | 3 GB | 25 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
 
 Total si estuvieran todas encendidas: **unos 31 GB de RAM y 17 vCPU**.
 
 Dentro de los nodos Proxmox irán un contenedor y una VM Debian sin escritorio para la migración (T5), con la RAM de los nodos.
+
+
+### Cómo se crearon las VM y de dónde salen las imágenes
+
+- Las 10 VM se crearon el 15/11/2026 con `VBoxManage` (VirtualBox por comandos), todas en el grupo `ISO-individual`. Así solo se crea el «hardware» virtual: la instalación se hace a mano dentro de cada VM (T5).
+- Antes de poner una ISO en una VM, calcula su SHA256 y lo compara con el que publica el fabricante. Solo se usan las que coinciden. Resultado: [evidencias/t5-isos-sha256-20261115.txt](../evidencias/t5-isos-sha256-20261115.txt).
+- **Windows Server 2025 (evaluación):** Microsoft no publica el hash. Se acepta porque viene de su servidor oficial por HTTPS y la descarga está completa; se apunta su hash para demostrar más adelante que es la misma.
+- **Windows 11:** la `w11.iso` que había en el disco no se usa: no se sabe de dónde salió y es una compilación de 2023. Falta bajar la actual (español, 64 bits) de <https://www.microsoft.com/es-es/software-download/windows11>, comprobar su SHA256 y ponerla en `cli-win11`.
+- Las VM aún no arrancan en el portátil de casa hasta resolver [INC-01](../incidencias/INC-01-virtualbox-secure-boot-casa.md) (Secure Boot).
 
 ## 3. Qué puedo arrancar a la vez y qué no (limitaciones)
 

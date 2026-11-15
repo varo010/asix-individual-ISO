@@ -37,3 +37,15 @@ Preguntas que me pueden hacer y las ideas clave de la respuesta. **Hay que saber
 | ¿Por qué los servidores llevan IP fija y los clientes DHCP? | A los servidores se les busca siempre en la misma dirección; los clientes no necesitan una IP concreta |
 | ¿Para qué el modo promiscuo en Proxmox? | Las VM de dentro del nodo salen con su propia MAC; sin modo promiscuo VirtualBox tira esas tramas |
 | Describe el camino de un paquete del cliente a Internet | Cliente → router (NAT 1) → NAT de VirtualBox (NAT 2) → red real → Internet, y la respuesta deshaciendo los dos NAT |
+
+## T5 · Montaje de las VM e imágenes
+
+| Pregunta | Idea clave |
+|---|---|
+| ¿Cómo sabes que la ISO no está corrupta ni modificada? | Calculo su SHA256 (`sha256sum`) y lo comparo con el que publica el fabricante en su web oficial. Si cambia un solo bit, el hash es totalmente distinto |
+| ¿Y si el fabricante no publica el hash (Windows Server)? | Me fío del origen: servidor oficial de Microsoft por HTTPS (el certificado garantiza quién lo envía) y la descarga completa. Apunto su hash para demostrar que instalé esa misma |
+| OPNsense solo da el hash del `.bz2`, ¿cómo compruebas la ISO? | Compruebo el `.bz2`; al descomprimir, `bunzip2` revisa el CRC de cada bloque, así que una ISO descomprimida sin error es la original |
+| ¿Por qué no usaste la `w11.iso` que ya tenías? | No sé de dónde salió y es una versión de 2023: no puedo garantizar ni el origen ni que esté al día |
+| ¿Por qué la VM de Proxmox tiene «VT-x anidado»? | Proxmox es un hipervisor: necesita las instrucciones de virtualización del procesador dentro de la VM para arrancar sus propias VM |
+| ¿Por qué Windows 11 lleva TPM y Secure Boot? | Son requisitos de instalación de Windows 11; VirtualBox los emula (TPM 2.0 y claves de Microsoft en la UEFI) |
+| ¿Por qué discos dinámicos? | Solo ocupan lo que se escribe: caben las 10 VM en el disco USB aunque la suma de tamaños máximos sea mayor |

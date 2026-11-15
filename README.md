@@ -17,9 +17,9 @@ Estados: Pendiente · En curso · Hecho · Simulado.
 
 | Tarea | Qué pide la parte individual | Documento | RA | Estado |
 |---|---|---|---|---|
-| T0 · Entorno de pruebas | Montar mi entorno y justificar sus límites. Ampliación: documentarlo en Git | [00-entorno](docs/00-entorno.md) | FDM RA1 | En curso: diseñado y justificado; faltan las VM y GitHub |
+| T0 · Entorno de pruebas | Montar mi entorno y justificar sus límites. Ampliación: documentarlo en Git | [00-entorno](docs/00-entorno.md) | FDM RA1 | Hecho: diseñado, 10 VM, repo en GitHub. Falta ISO de W11 y [INC-01](incidencias/INC-01-virtualbox-secure-boot-casa.md) en casa |
 | T2 · Equipos | Inventario y comparativa del equipo de clase y el de casa; cuellos de botella. Ampliación: tests de memoria, disco y red | [02-equipos](docs/02-equipos.md) | FDM RA1 | Obligatorio hecho; ampliación: hecha en casa, faltan las pruebas en clase |
-| T4 · Red | Esquema de red y montaje en VirtualBox. Ampliación: implementarlo y verificarlo | [04-red](docs/04-red.md) | ISO RA1 | Obligatorio hecho (diseño); ampliación cuando estén las VM |
+| T4 · Red | Esquema de red y montaje en VirtualBox. Ampliación: implementarlo y verificarlo | [04-red](docs/04-red.md) | ISO RA1 | Obligatorio hecho (diseño y VM creadas con su red); ampliación al instalar el router |
 | T5 · Comunicaciones | MikroTik, OPNsense y Debian con nftables | [05-comunicaciones](docs/05-comunicaciones.md) | ISO RA1, RA3, RA6 | Pendiente |
 | T5 · Datos | TrueNAS como servidor de copias | [05-truenas](docs/05-truenas.md) | ISO RA1, RA3 | Pendiente |
 | T5 · Virtualización | Clúster Proxmox y migración medida | [05-proxmox](docs/05-proxmox.md) | ISO RA1, RA6 | Pendiente |
