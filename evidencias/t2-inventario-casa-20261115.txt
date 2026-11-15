@@ -1,0 +1,73 @@
+# Inventario del equipo de CASA · 2026-11-15 14:01 · comandos sin privilegios
+## Modelo y firmware
+LENOVO
+83NN
+Legion Pro 5 16IRX10
+S9CN15WW
+07/23/2025
+Firmware: UEFI
+SecureBoot enabled
+## Sistema (mismo disco USB que en clase)
+PRETTY_NAME="Linux Mint 22.3"
+6.8.0-138-generic
+## CPU (lscpu)
+CPU(s):                                  32
+Model name:                              Intel(R) Core(TM) i9-14900HX
+Thread(s) per core:                      2
+Core(s) per socket:                      24
+Socket(s):                               1
+CPU(s) scaling MHz:                      18%
+CPU max MHz:                             5800.0000
+Virtualization:                          VT-x
+L2 cache:                                32 MiB (12 instances)
+L3 cache:                                36 MiB (1 instance)
+## Memoria (free -h, swapon)
+               total        used        free      shared  buff/cache   available
+Mem:            31Gi       3.6Gi        25Gi       619Mi       2.8Gi        27Gi
+Swap:           15Gi          0B        15Gi
+NAME       TYPE      SIZE USED PRIO
+/swapfile  file        8G   0B   -2
+/dev/zram0 partition 7.8G   0B  100
+## Discos (lsblk, lsusb)
+NAME          SIZE TYPE TRAN   ROTA MODEL                      FSTYPE    MOUNTPOINT
+sda         447.1G disk usb       1 KINGSTON SA400S37480G                
+|-sda1        509M part           1                            vfat      /boot/efi
+|-sda2       58.6G part           1                            ext4      /
+`-sda3        388G part           1                            ext4      /home
+zram0         7.8G disk           0                                      [SWAP]
+nvme0n1     953.9G disk nvme      0 SAMSUNG MZAL81T0HFLB-00BL2           
+|-nvme0n1p1   200M part nvme      0                            vfat      
+|-nvme0n1p2    16M part nvme      0                                      
+|-nvme0n1p3 952.9G part nvme      0                            BitLocker 
+`-nvme0n1p4   748M part nvme      0                            ntfs      
+    |__ Port 001: Dev 002, If 0, Class=Mass Storage, Driver=uas, 5000M
+Bus 002 Device 002: ID 152d:0578 JMicron Technology Corp. / JMicron USA Technology Corp. JMS578 SATA 6Gb/s
+## Red
+lo               UNKNOWN        127.0.0.1/8 ::1/128 
+enp12s0          DOWN           
+wlp0s20f3        UP             192.168.18.39/24 fe80::911:ba2:cb76:414c/64 
+docker0          DOWN           172.17.0.1/16 
+default via 192.168.18.1 dev wlp0s20f3 proto dhcp src 192.168.18.39 metric 600 
+172.17.0.0/16 dev docker0 proto kernel scope link src 172.17.0.1 linkdown 
+192.168.18.0/24 dev wlp0s20f3 proto kernel scope link src 192.168.18.39 metric 600 
+00:14.3 Network controller: Intel Corporation Raptor Lake-S PCH CNVi WiFi (rev 11)
+0c:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8111/8168/8211/8411 PCI Express Gigabit Ethernet Controller (rev 15)
+*:44:270 Mbit/s:48
+## Gráficos
+00:02.0 VGA compatible controller: Intel Corporation Raptor Lake-S UHD Graphics (rev 04)
+01:00.0 VGA compatible controller: NVIDIA Corporation Device 2d58 (rev a1)
+## Batería
+L24M4PC0
+80000000
+74230000
+## Hipervisor
+7.2.18r175117
+Extension Packs: 1
+Pack no. 0:   Oracle VirtualBox Extension Pack
+Version:        7.2.18
+kvm_intel             487424  0
+kvm                  1404928  1 kvm_intel
+vboxdrv.ko
+vboxnetadp.ko
+vboxnetflt.ko
+localhost.localdomain Secure Boot Module Signature key

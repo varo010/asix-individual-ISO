@@ -4,50 +4,106 @@ RA: ISO RA1. Esquema de red de mi entorno, montaje en VirtualBox y direcciones.
 
 ## Lo que pide la rúbrica
 
-- [ ] Dibujar el esquema de red individual, el montaje virtual y las direcciones previstas.
+- [ ] Dibujar el esquema de red individual, el montaje virtual y las direcciones previstas (diseño hecho; falta XX y el `.drawio`).
 - [ ] Indicar la configuración de cada interfaz y la LAN 192.168.XX.0/24 según mi puesto en el aula; la WAN puede ir por DHCP (adaptador puente o, mejor, NAT).
 - [ ] Ampliación: implementarlo y comprobar la conectividad con `ping`, `traceroute` y la tabla de rutas.
 - [ ] Ampliación: evidencias de `ping`, `traceroute`, rutas y configuración de interfaces entre VM y hacia el exterior.
 
+> **XX = N/C** (número de mi puesto en el aula). Cuando lo sepa, sustituir `XX` en este documento.
+
 ## 1. Esquema
 
-> Exportación de [diagramas/](../diagramas/) cuando esté hecho.
+```mermaid
+flowchart TB
+    INET((Internet))
+    HOST["Portátil anfitrión<br/>(clase: cable · casa: Wi-Fi)"]
+    NAT["NAT de VirtualBox<br/>10.0.2.0/24 · gw 10.0.2.2 · DNS 10.0.2.3"]
+    INET --- HOST --- NAT
+
+    subgraph ROUTER["Router activo (solo uno a la vez)"]
+        R["r-mikrotik · r-opnsense · r-nftables<br/>WAN: 10.0.2.15 (DHCP)<br/>LAN: 192.168.XX.1"]
+    end
+    NAT --- R
+
+    LAN{{"Red interna «lan-iso»<br/>192.168.XX.0/24"}}
+    R --- LAN
+
+    LAN --- NAS["nas-truenas<br/>.10"]
+    LAN --- P1["pve1 · .11"]
+    LAN --- P2["pve2 · .12"]
+    LAN --- DC["srv-dc · .13"]
+    LAN --- SL["srv-linux · .14"]
+    LAN --- W["cli-win11<br/>DHCP .100–.199"]
+    LAN --- U["cli-linux<br/>DHCP .100–.199"]
+    P1 -.- G["CT y VM de prueba<br/>.20–.29"]
+    P2 -.- G
+```
 
 ## 2. Redes de VirtualBox
 
 | Red de VirtualBox | Tipo | Para qué | Quién se conecta |
 |---|---|---|---|
-| N/C | NAT | WAN del router: salida al exterior | Solo el router activo |
-| N/C | Red interna | LAN 192.168.XX.0/24 | Router (LAN) y todas las demás VM |
+| NAT (la de cada VM) | NAT | WAN del router: salida al exterior | Solo el adaptador 1 del router activo |
+| `lan-iso` | Red interna | LAN 192.168.XX.0/24 | Adaptador 2 del router y adaptador 1 de todas las demás VM |
 
-> Explica con tus palabras por qué la WAN va en NAT y la LAN en red interna, y qué pasaría con cada otro tipo (puente, solo-anfitrión).
+**Por qué la WAN en NAT:**
+- Funciona igual en clase (cable) y en casa (Wi-Fi). El adaptador puente sobre Wi-Fi suele dar problemas, porque muchos puntos de acceso no aceptan varias MAC por un mismo cliente.
+- No toca la red del aula: mi router no pide IP ni aparece en 172.16.222.0/24, y es imposible que mi DHCP de pruebas se escape a la red compartida (el enunciado lo prohíbe).
+- Inconveniente aceptado: hay **doble NAT** (mi router y VirtualBox). Desde fuera no se puede entrar a mi LAN sin reenviar puertos, pero no hace falta.
+
+**Por qué la LAN en red interna:**
+- Es un switch virtual que solo une a las VM que usan el nombre `lan-iso`. El anfitrión y la red real no la ven: la única salida es mi router, como en una empresa.
+- Puente o solo-anfitrión mezclarían mi LAN con la red física o con el anfitrión, y el router dejaría de ser el único camino.
+
+**Ajuste para Proxmox:** los adaptadores de `pve1` y `pve2` llevan el *modo promiscuo* en **Permitir todo**. Las VM y contenedores de dentro de Proxmox salen con su propia MAC por la tarjeta del nodo; sin modo promiscuo, VirtualBox descarta esas tramas y no tendrían red.
 
 ## 3. Plan de direcciones
 
-LAN: 192.168.XX.0/24 · máscara 255.255.255.0.
+LAN: 192.168.XX.0/24 · máscara 255.255.255.0 · difusión 192.168.XX.255.
 
-| Rango | Uso |
-|---|---|
-| N/C | Routers |
-| N/C | Servidores (IP fija) |
-| N/C | Clientes (DHCP) |
+| Rango | Uso | Método |
+|---|---|---|
+| .1 | Router activo (puerta de enlace) | Fija |
+| .10 – .19 | Servidores | Fija |
+| .20 – .29 | Contenedores y VM dentro de Proxmox | Fija |
+| .100 – .199 | Clientes | DHCP del router |
+| Resto | Libre | — |
+
+**Los tres routers usan la misma IP (.1).** Solo hay uno encendido a la vez, así que, al cambiar de router, los demás equipos no se tocan. Lo que cambia es quién da el DHCP y el DNS: si un router no los ofrece, se configura en él o se ponen fijos en los clientes durante esa prueba.
 
 ## 4. Configuración de cada interfaz
 
-| VM | Interfaz | Red de VirtualBox | IP / máscara | Puerta de enlace | DNS | Método |
+| VM | Interfaz (VirtualBox) | Red | IP / máscara | Puerta de enlace | DNS | Método |
 |---|---|---|---|---|---|---|
+| Router activo | Adaptador 1 | NAT | 10.0.2.15/24 | 10.0.2.2 | 10.0.2.3 | DHCP de VirtualBox |
+| Router activo | Adaptador 2 | `lan-iso` | 192.168.XX.1/24 | — | — | Fija |
+| `nas-truenas` | Adaptador 1 | `lan-iso` | 192.168.XX.10/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
+| `pve1` | Adaptador 1 (promiscuo) | `lan-iso` | 192.168.XX.11/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
+| `pve2` | Adaptador 1 (promiscuo) | `lan-iso` | 192.168.XX.12/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
+| `srv-dc` | Adaptador 1 | `lan-iso` | 192.168.XX.13/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
+| `srv-linux` | Adaptador 1 | `lan-iso` | 192.168.XX.14/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
+| `cli-win11` | Adaptador 1 | `lan-iso` | 192.168.XX.100–199/24 | 192.168.XX.1 | 192.168.XX.1 | DHCP |
+| `cli-linux` | Adaptador 1 | `lan-iso` | 192.168.XX.100–199/24 | 192.168.XX.1 | 192.168.XX.1 | DHCP |
 
-## 5. Ampliación: verificación de la conectividad
+- El DNS de la LAN es el router, que reenvía las consultas al DNS de VirtualBox (10.0.2.3), que a su vez usa el del anfitrión. Así el mismo diseño funciona en clase y en casa.
+- Las IP de la WAN son las que da por defecto la NAT de VirtualBox. Se comprobarán al montarlo.
+
+## 5. Camino del tráfico
+
+Un cliente que abre una web: `cli-linux` (192.168.XX.1xx) → router por `lan-iso` → el router cambia la IP de origen por la suya, 10.0.2.15 (NAT 1) → NAT de VirtualBox, que la cambia por la del anfitrión (NAT 2) → red de clase o de casa → Internet. La respuesta vuelve por el mismo camino deshaciendo los dos NAT.
+
+## 6. Ampliación: verificación de la conectividad
 
 | Prueba | Desde | Hacia | Resultado | Evidencia |
 |---|---|---|---|---|
 
-## 6. Comparación con la red del grupo
+## 7. Comparación con la red del grupo
 
 | Aspecto | Grupo 3 | Mi entorno |
 |---|---|---|
 | LAN | 192.168.30.0/24 | 192.168.XX.0/24 |
-| WAN | 172.16.222.0/24, IP asignada por el profesor (MikroTik .216) | NAT de VirtualBox por DHCP |
-| Puerta de enlace de la LAN | MikroTik, 192.168.30.1 | N/C |
+| WAN | 172.16.222.0/24: IP asignada por el profesor (MikroTik .216) o por puente | NAT de VirtualBox por DHCP |
+| Puerta de enlace de la LAN | MikroTik, 192.168.30.1; OPNsense y Debian con otras IP (.2 y .3) | Siempre .1, la del router encendido |
 | Switch | Físicos no gestionables (TP-Link) | Red interna de VirtualBox (switch virtual) |
-| Separación de redes | El router separa la LAN del grupo de la red del aula | N/C |
+| Separación de redes | El router separa la LAN del grupo de la red del aula | El router separa `lan-iso` de la NAT; la red real no ve mi LAN |
+| Doble NAT | No (el router está directamente en la red del aula) | Sí (mi router + NAT de VirtualBox) |
