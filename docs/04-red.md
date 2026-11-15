@@ -4,12 +4,12 @@ RA: ISO RA1. Esquema de red de mi entorno, montaje en VirtualBox y direcciones.
 
 ## Lo que pide la rúbrica
 
-- [ ] Dibujar el esquema de red individual, el montaje virtual y las direcciones previstas (diseño hecho; falta XX y el `.drawio`).
-- [ ] Indicar la configuración de cada interfaz y la LAN 192.168.XX.0/24 según mi puesto en el aula; la WAN puede ir por DHCP (adaptador puente o, mejor, NAT).
+- [x] Dibujar el esquema de red individual, el montaje virtual y las direcciones previstas.
+- [x] Indicar la configuración de cada interfaz y la LAN 192.168.27.0/24 según mi puesto en el aula; la WAN por DHCP con NAT.
 - [ ] Ampliación: implementarlo y comprobar la conectividad con `ping`, `traceroute` y la tabla de rutas.
 - [ ] Ampliación: evidencias de `ping`, `traceroute`, rutas y configuración de interfaces entre VM y hacia el exterior.
 
-> **XX = N/C** (número de mi puesto en el aula). Cuando lo sepa, sustituir `XX` en este documento.
+> **XX = 27 → LAN 192.168.27.0/24.** En el aula mi portátil no tiene un puesto con número fijo: recibe la IP por DHCP. Uso el último número de la IP que tenía en la red del aula el 12/11/2026 (172.16.222.**27**, ver [inventario de clase](../evidencias/t2-inventario-clase-20261112.txt)). No coincide con las redes de los grupos (10, 20, 30 y 40).
 
 ## 1. Esquema
 
@@ -21,11 +21,11 @@ flowchart TB
     INET --- HOST --- NAT
 
     subgraph ROUTER["Router activo (solo uno a la vez)"]
-        R["r-mikrotik · r-opnsense · r-nftables<br/>WAN: 10.0.2.15 (DHCP)<br/>LAN: 192.168.XX.1"]
+        R["r-mikrotik · r-opnsense · r-nftables<br/>WAN: 10.0.2.15 (DHCP)<br/>LAN: 192.168.27.1"]
     end
     NAT --- R
 
-    LAN{{"Red interna «lan-iso»<br/>192.168.XX.0/24"}}
+    LAN{{"Red interna «lan-iso»<br/>192.168.27.0/24"}}
     R --- LAN
 
     LAN --- NAS["nas-truenas<br/>.10"]
@@ -44,7 +44,7 @@ flowchart TB
 | Red de VirtualBox | Tipo | Para qué | Quién se conecta |
 |---|---|---|---|
 | NAT (la de cada VM) | NAT | WAN del router: salida al exterior | Solo el adaptador 1 del router activo |
-| `lan-iso` | Red interna | LAN 192.168.XX.0/24 | Adaptador 2 del router y adaptador 1 de todas las demás VM |
+| `lan-iso` | Red interna | LAN 192.168.27.0/24 | Adaptador 2 del router y adaptador 1 de todas las demás VM |
 
 **Por qué la WAN en NAT:**
 - Funciona igual en clase (cable) y en casa (Wi-Fi). El adaptador puente sobre Wi-Fi suele dar problemas, porque muchos puntos de acceso no aceptan varias MAC por un mismo cliente.
@@ -59,7 +59,7 @@ flowchart TB
 
 ## 3. Plan de direcciones
 
-LAN: 192.168.XX.0/24 · máscara 255.255.255.0 · difusión 192.168.XX.255.
+LAN: 192.168.27.0/24 · máscara 255.255.255.0 · difusión 192.168.27.255.
 
 | Rango | Uso | Método |
 |---|---|---|
@@ -76,21 +76,21 @@ LAN: 192.168.XX.0/24 · máscara 255.255.255.0 · difusión 192.168.XX.255.
 | VM | Interfaz (VirtualBox) | Red | IP / máscara | Puerta de enlace | DNS | Método |
 |---|---|---|---|---|---|---|
 | Router activo | Adaptador 1 | NAT | 10.0.2.15/24 | 10.0.2.2 | 10.0.2.3 | DHCP de VirtualBox |
-| Router activo | Adaptador 2 | `lan-iso` | 192.168.XX.1/24 | — | — | Fija |
-| `nas-truenas` | Adaptador 1 | `lan-iso` | 192.168.XX.10/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
-| `pve1` | Adaptador 1 (promiscuo) | `lan-iso` | 192.168.XX.11/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
-| `pve2` | Adaptador 1 (promiscuo) | `lan-iso` | 192.168.XX.12/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
-| `srv-dc` | Adaptador 1 | `lan-iso` | 192.168.XX.13/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
-| `srv-linux` | Adaptador 1 | `lan-iso` | 192.168.XX.14/24 | 192.168.XX.1 | 192.168.XX.1 | Fija |
-| `cli-win11` | Adaptador 1 | `lan-iso` | 192.168.XX.100–199/24 | 192.168.XX.1 | 192.168.XX.1 | DHCP |
-| `cli-linux` | Adaptador 1 | `lan-iso` | 192.168.XX.100–199/24 | 192.168.XX.1 | 192.168.XX.1 | DHCP |
+| Router activo | Adaptador 2 | `lan-iso` | 192.168.27.1/24 | — | — | Fija |
+| `nas-truenas` | Adaptador 1 | `lan-iso` | 192.168.27.10/24 | 192.168.27.1 | 192.168.27.1 | Fija |
+| `pve1` | Adaptador 1 (promiscuo) | `lan-iso` | 192.168.27.11/24 | 192.168.27.1 | 192.168.27.1 | Fija |
+| `pve2` | Adaptador 1 (promiscuo) | `lan-iso` | 192.168.27.12/24 | 192.168.27.1 | 192.168.27.1 | Fija |
+| `srv-dc` | Adaptador 1 | `lan-iso` | 192.168.27.13/24 | 192.168.27.1 | 192.168.27.1 | Fija |
+| `srv-linux` | Adaptador 1 | `lan-iso` | 192.168.27.14/24 | 192.168.27.1 | 192.168.27.1 | Fija |
+| `cli-win11` | Adaptador 1 | `lan-iso` | 192.168.27.100–199/24 | 192.168.27.1 | 192.168.27.1 | DHCP |
+| `cli-linux` | Adaptador 1 | `lan-iso` | 192.168.27.100–199/24 | 192.168.27.1 | 192.168.27.1 | DHCP |
 
 - El DNS de la LAN es el router, que reenvía las consultas al DNS de VirtualBox (10.0.2.3), que a su vez usa el del anfitrión. Así el mismo diseño funciona en clase y en casa.
 - Las IP de la WAN son las que da por defecto la NAT de VirtualBox. Se comprobarán al montarlo.
 
 ## 5. Camino del tráfico
 
-Un cliente que abre una web: `cli-linux` (192.168.XX.1xx) → router por `lan-iso` → el router cambia la IP de origen por la suya, 10.0.2.15 (NAT 1) → NAT de VirtualBox, que la cambia por la del anfitrión (NAT 2) → red de clase o de casa → Internet. La respuesta vuelve por el mismo camino deshaciendo los dos NAT.
+Un cliente que abre una web: `cli-linux` (192.168.27.1xx) → router por `lan-iso` → el router cambia la IP de origen por la suya, 10.0.2.15 (NAT 1) → NAT de VirtualBox, que la cambia por la del anfitrión (NAT 2) → red de clase o de casa → Internet. La respuesta vuelve por el mismo camino deshaciendo los dos NAT.
 
 ## 6. Ampliación: verificación de la conectividad
 
@@ -101,7 +101,7 @@ Un cliente que abre una web: `cli-linux` (192.168.XX.1xx) → router por `lan-is
 
 | Aspecto | Grupo 3 | Mi entorno |
 |---|---|---|
-| LAN | 192.168.30.0/24 | 192.168.XX.0/24 |
+| LAN | 192.168.30.0/24 | 192.168.27.0/24 |
 | WAN | 172.16.222.0/24: IP asignada por el profesor (MikroTik .216) o por puente | NAT de VirtualBox por DHCP |
 | Puerta de enlace de la LAN | MikroTik, 192.168.30.1; OPNsense y Debian con otras IP (.2 y .3) | Siempre .1, la del router encendido |
 | Switch | Físicos no gestionables (TP-Link) | Red interna de VirtualBox (switch virtual) |

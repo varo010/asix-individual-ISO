@@ -72,7 +72,7 @@ Dentro de los nodos Proxmox irán un contenedor y una VM Debian sin escritorio p
 | Dónde se ejecuta | Equipos físicos del aula + servidor Proxmox del centro (`1asixb`) | Un solo portátil con VirtualBox (el de clase o el de casa, con el mismo disco USB) |
 | Router | MikroTik hEX **físico**; OPNsense y Debian en VM de VirtualBox | Los tres en VM (MikroTik como CHR) |
 | Red exterior (WAN) | Red del aula 172.16.222.0/24 | NAT de VirtualBox, IP por DHCP |
-| LAN | 192.168.30.0/24 con switches físicos | 192.168.XX.0/24, red interna de VirtualBox |
+| LAN | 192.168.30.0/24 con switches físicos | 192.168.27.0/24, red interna de VirtualBox |
 | NAS | TrueNAS en un PC físico (SSD + HDD de 2 TB) | TrueNAS en VM con discos virtuales |
 | Clúster Proxmox | 3 nodos anidados en el servidor del centro | 2 nodos anidados en VirtualBox |
 | Clientes | Portátiles físicos de los compañeros | 2 VM (Windows 11 y Ubuntu) |

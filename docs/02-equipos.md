@@ -7,9 +7,9 @@ RA: FDM RA1. Inventario de los dos equipos, comparativa y cuellos de botella.
 - [x] Inventariar el equipo de clase y el de casa.
 - [x] Compararlos e identificar cuellos de botella.
 - [x] Proponer soluciones ajustadas al hardware disponible.
-- [ ] Ampliación: tests de memoria, disco y red en los dos equipos (casa: hecho en parte; clase: pendiente).
+- [ ] Ampliación: tests de memoria, disco y red en los dos equipos (casa: hecho; clase: pendiente).
 - [x] Ampliación: registrar herramienta, condiciones y resultado.
-- [ ] Ampliación: confirmar o descartar con datos los cuellos de botella previstos.
+- [ ] Ampliación: confirmar o descartar con datos los cuellos de botella previstos (casa: hecho; falta clase).
 
 ## 0. Punto de partida: un solo disco, dos equipos
 
@@ -60,23 +60,36 @@ Con Secure Boot activado, el firmware solo deja cargar módulos del kernel firma
 
 ## 3. Ampliación: tests de diagnóstico
 
-Herramienta:, igual en los dos equipos. Usa `openssl speed`, `dd`, `ping` y `curl`; con `sudo` y las herramientas instaladas añade `smartctl`, `fio` y `memtester`.
+Herramienta:, igual en los dos equipos. Usa `openssl speed`, `dd`, `ping` y `curl`; con `sudo` añade `smartctl`, `fio` y `memtester` (instalados con `sudo apt install fio smartmontools memtester sysstat`).
 
 | Equipo | Recurso | Herramienta | Condiciones | Resultado | Interpretación | Evidencia |
 |---|---|---|---|---|---|---|
-| Casa | CPU (1 hilo) | `openssl speed sha256` | 15/11, con batería, gobernador `powersave`, sin VM, 4 min encendido | ~1,05 GB/s | Rendimiento de un solo núcleo | [diagnóstico](../evidencias/t2-diagnostico-83NN-20261115.txt) |
-| Casa | CPU (32 hilos) | `openssl speed -multi 32 sha256` | Igual; dos pruebas seguidas | 30,0 GB/s la primera y **18,3 GB/s la segunda** (CPU a 69 °C) | Con batería, el equipo recorta potencia en cuanto la carga dura un poco: un 39 % menos. Hay que repetirlo con cargador | ídem |
-| Casa | Memoria | `dd /dev/zero → /dev/null` (20 GiB) | Igual | ~31 GB/s; 27 GiB disponibles sin VM | La memoria no limita la velocidad; limita la **cantidad** | ídem |
-| Casa | Disco (secuencial) | `dd` 2 GiB sin caché | Igual | Escritura 389 MB/s · lectura 410 MB/s | Cerca del máximo práctico de USB 3.0 (5 Gb/s); el SSD por SATA llegaría a unos 500 MB/s en lectura (ficha del fabricante): el puente USB recorta un poco | ídem |
-| Casa | Red (local) | `ping -c 10` a la puerta de enlace | Wi-Fi 5 GHz, señal 50/100 | 0 % de pérdida, media 6 ms (máx. 24 ms) | Normal en Wi-Fi; en cable sería menos de 1 ms | ídem |
-| Casa | Red (Internet) | `ping` a 1.1.1.1 y descarga de 100 Mb | Igual | 0 % de pérdida, media 31 ms; descarga 12,2 MB/s (~98 Mb/s) | Suficiente para descargar ISOs (una de 6 GB, unos 8–9 min) | ídem |
-| Casa | Disco (aleatorio 4K), SMART y memtester | `fio`, `smartctl`, `memtester` | Pendiente: hacen falta `sudo apt install fio smartmontools memtester` y `sudo` | — | — | — |
+| Casa | CPU (1 hilo) | `openssl speed sha256` (bloques de 16 KB) | 15/11 · **con batería** · `powersave` · sin VM | 1,05 GB/s | Referencia con batería | [batería](../evidencias/t2-diagnostico-83NN-bateria-20261115.txt) |
+| Casa | CPU (32 hilos) | `openssl speed -multi 32 sha256` | Igual; dos pruebas seguidas | 30,0 GB/s y después **18,3 GB/s** (CPU a 69 °C) | Con batería recorta potencia en cuanto la carga dura: un 39 % menos de una prueba a la siguiente | ídem |
+| Casa | CPU (1 hilo) | `openssl speed sha256` | 15/11 · **con cargador** · sin VM | **1,82 GB/s** | Un 73 % más que con batería | [cargador](../evidencias/t2-diagnostico-83NN-20261115.txt) |
+| Casa | CPU (32 hilos) | `openssl speed -multi 32 sha256` | Igual | 34,8 GB/s (pico de 46,9 GB/s con bloques de 8 KB) | Confirma que con batería el equipo no da todo su rendimiento | ídem |
+| Casa | Memoria (velocidad) | `dd /dev/zero → /dev/null` (20 GiB) | Con batería / con cargador | 31 GB/s / **54 GB/s** | La memoria no limita la velocidad; limita la **cantidad** (27 GiB libres sin VM) | ídem |
+| Casa | Memoria (errores) | `memtester 1024M 1` | Con cargador, 1 GiB, 1 pasada | Todas las pruebas `ok` | Sin errores en el GiB probado. No sustituye un test completo de arranque (MemTest86), que revisaría toda la RAM | ídem |
+| Casa | Disco (secuencial) | `dd` 2 GiB sin caché (`oflag/iflag=direct`) | Con cargador | Escritura 362 MB/s · lectura 403 MB/s | Cerca del máximo práctico de USB 3.0 (5 Gb/s); el SSD por SATA directo llegaría a unos 500 MB/s en lectura (ficha de Kingston) | ídem |
+| Casa | Disco (aleatorio) | `fio` lectura aleatoria 4 KiB, profundidad 32, 20 s | Con cargador | **41.200 IOPS** (161 MiB/s), latencia media 0,77 ms | Bien para varias VM a la vez. Comparación: el HDD del PC-01 del grupo hace 107 IOPS | ídem |
+| Casa | Disco (salud) | `smartctl -d sat -H -A` | Con cargador | PASSED; 1572 h encendido; 483 encendidos; 1834 GiB escritos; 0 sectores reasignados; 26 °C. **Errores CRC: atributo 199 = 262185 (valor bruto) y 218 = 177** | El SSD está sano, pero hay **errores de transmisión** en el enlace SATA entre el SSD y el adaptador USB de la caja. Ver apartado 3.1 | ídem |
+| Casa | Red (local) | `ping -c 10` a la puerta de enlace | Wi-Fi 5 GHz, señal 50/100 | 0 % de pérdida, media 4,6–6 ms | Normal en Wi-Fi; en cable sería menos de 1 ms | ídem |
+| Casa | Red (Internet) | `ping` a 1.1.1.1 y descarga de 100 Mb | Igual | 0 % de pérdida, 14–31 ms; descarga entre 6,4 y 12,2 MB/s en dos pruebas | El Wi-Fi varía mucho de una prueba a otra; para descargar ISOs, mejor cable | ídem |
+
+### 3.1 Posible avería: errores CRC en el disco USB
+
+- **Qué indica:** un error CRC es un bloque que llega dañado por el cable y se tiene que volver a enviar. No se pierden datos (se reenvía), pero el disco va más lento mientras pasa. El SSD en sí está sano: 0 sectores reasignados y 0 errores incorregibles.
+- **Causa probable:** el enlace SATA **dentro de la caja USB**: el conector entre el SSD y la placa adaptadora (JMicron JMS578), o el propio adaptador. Que el disco se desconecte de un portátil y se conecte a otro muchas veces (483 encendidos) favorece los falsos contactos.
+- **Otra causa posible:** que el contador venga de antes (el disco tiene 1572 h de uso) y ya no esté subiendo.
+- **Prueba que las distingue:** anotar los dos contadores, hacer una prueba de disco larga (por ejemplo `fio` 5 minutos) y volver a leerlos. Si **suben**, el problema es actual y está en la caja o el conector. Si **no cambian**, son errores antiguos.
+- **Solución si suben:** volver a encajar el SSD en la caja o cambiar la caja USB (son baratas); en un equipo de sobremesa, cambiar el cable SATA.
 
 ## 4. Conclusión (provisional)
 
-- El **cuello de botella común** es el **disco USB**, porque es el mismo en los dos equipos y todas las VM dependen de él. Falta medir el acceso aleatorio con `fio`, que es el que más sufre con varias VM.
+- El **cuello de botella común** es el **disco USB**, porque es el mismo en los dos equipos y todas las VM dependen de él: unos 400 MB/s en secuencial. En aleatorio rinde bien (41.200 IOPS), así que se **descarta** que sea un problema grave con unas pocas VM. Se comprobará con carga real en la T7.
+- **Riesgo encontrado:** errores CRC en el enlace SATA de la caja USB (apartado 3.1). Hay que vigilarlos, porque todo el entorno está en ese disco.
 - La **RAM** es lo que limita **cuántas VM** arrancan a la vez, igual en los dos equipos (30–31 GiB).
-- El equipo de casa tiene casi el doble de CPU, pero solo lo aprovecha con el cargador conectado.
+- **Confirmado:** el equipo de casa tiene casi el doble de CPU, pero solo lo aprovecha con el cargador conectado (+73 % en un núcleo).
 - El entorno vive en el disco USB y funciona en los dos equipos, una vez resuelta la incidencia de Secure Boot en casa.
 
 ## 5. Comparación con el inventario del grupo
@@ -86,4 +99,6 @@ Herramienta:, igual en los dos equipos. Usa `openssl speed`, `dd`, `ping` y `cur
 | Equipo con las VM | PC-01: i3-4160 (2 núcleos/4 hilos), 8 GB DDR3, HDD de 500 GB | Portátiles con 18 y 32 hilos, 30–31 GiB, SSD por USB |
 | Cuello de botella que encontró el grupo | HDD con accesos aleatorios (107 IOPS en el PC-01) y red Gigabit con ficheros grandes | Disco USB compartido por todas las VM y RAM para el número de VM |
 | Disco, lectura secuencial | HDD del PC-01: 181 MiB/s | SSD USB: 410 MB/s (~391 MiB/s) |
-| Herramientas | `fio`, `smartctl`, `openssl speed`, `ethtool`, `iperf3`, `top` | `openssl speed`, `dd`, `ping`, `curl` (+ `fio`, `smartctl` y `memtester` pendientes) |
+| Herramientas | `fio`, `smartctl`, `openssl speed`, `ethtool`, `iperf3`, `top` | `openssl speed`, `dd`, `fio`, `smartctl`, `memtester`, `ping`, `curl` |
+| Disco, lectura aleatoria 4K | HDD del PC-01: 107 IOPS | SSD USB: 41.200 IOPS |
+| Errores CRC | HDD del PC-01: 1 error | SSD USB: 177 (atributo 218), a vigilar |

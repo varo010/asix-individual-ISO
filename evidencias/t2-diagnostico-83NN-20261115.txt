@@ -1,48 +1,77 @@
-# Diagnóstico · LENOVO 83NN · 2026-11-15 14:00:23
+# Diagnóstico · LENOVO 83NN · 2026-11-15 14:43:26
 
 ## Condiciones de la prueba
-Encendido desde: up 4 minutes · carga: 3.52 2.33 0.95
-Cargador conectado: 0 (1 = sí, 0 = batería)
+Encendido desde: up 47 minutes · carga: 1.60 1.14 0.80
+Cargador conectado: 1 (1 = sí, 0 = batería)
 Gobernador de CPU: powersave
 VM de VirtualBox en marcha: 0
-Temperatura CPU: +69.0
+Temperatura CPU: +62.0
 
 ## CPU · openssl speed sha256 (bloques de 16 KB, 3 s)
 -- 1 hilo:
-sha256           76687.06k   251004.82k   586713.43k   883982.34k  1035852.37k  1054059.18k
+sha256          136142.34k   424779.54k  1016978.01k  1530646.87k  1800099.16k  1822938.45k
 -- todos los hilos (32):
-sha256         1670431.26k  5236208.19k  7925398.36k 13955086.02k 17914570.31k 18260333.91k
+sha256         2715703.05k  9239979.03k 24981948.31k 41108379.04k 46935968.43k 34824183.44k
 
 ## Memoria
                total        used        free      shared  buff/cache   available
-Mem:            31Gi       3.5Gi        25Gi       521Mi       2.7Gi        27Gi
+Mem:            31Gi       3.7Gi        25Gi       574Mi       3.2Gi        27Gi
 Swap:           15Gi          0B        15Gi
 -- Copia en memoria (dd /dev/zero -> /dev/null, 20 GiB en bloques de 1 MiB):
-21474836480 bytes (21 GB, 20 GiB) copied, 0.698543 s, 30.7 GB/s
--- memtester: no ejecutado (falta la herramienta o sudo)
+21474836480 bytes (21 GB, 20 GiB) copied, 0.396292 s, 54.2 GB/s
+-- memtester 1 GiB, 1 pasada:
+  Compare DIV         : ok
+  Compare OR          : ok
+  Compare AND         : ok
+  Sequential Increment: ok
+ok
+ok
+ok
+ok
+ok
+ok
+ok
+ok
+ok
+
+Done.
 
 ## Disco del sistema
 NAME   SIZE TRAN MODEL
 sda  447.1G usb  KINGSTON SA400S37480G
     |__ Port 001: Dev 002, If 0, Class=Mass Storage, Driver=uas, 5000M
--- SMART: no ejecutado (falta smartctl o sudo)
+-- SMART:
+SMART overall-health self-assessment test result: PASSED
+Warning: This result is based on an Attribute check.
+  9 Power_On_Hours          0x0032   100   100   000    Old_age   Always       -       1572
+ 12 Power_Cycle_Count       0x0032   100   100   000    Old_age   Always       -       483
+187 Reported_Uncorrect      0x0032   100   100   000    Old_age   Always       -       0
+194 Temperature_Celsius     0x0022   026   033   000    Old_age   Always       -       26 (Min/Max 23/33)
+196 Reallocated_Event_Count 0x0032   100   100   000    Old_age   Always       -       0
+199 SATA_CRC_Error_Count    0x0032   100   100   000    Old_age   Always       -       262185
+218 CRC_Error_Count         0x0032   100   100   000    Old_age   Always       -       177
+241 Lifetime_Writes_GiB     0x0032   100   100   000    Old_age   Always       -       1834
+242 Lifetime_Reads_GiB      0x0032   100   100   000    Old_age   Always       -       1354
 -- Escritura secuencial 2 GiB (dd, sin caché):
-2147483648 bytes (2.1 GB, 2.0 GiB) copied, 5.51861 s, 389 MB/s
+2147483648 bytes (2.1 GB, 2.0 GiB) copied, 5.92972 s, 362 MB/s
 -- Lectura secuencial 2 GiB (dd, sin caché):
-2147483648 bytes (2.1 GB, 2.0 GiB) copied, 5.24054 s, 410 MB/s
--- Lectura aleatoria 4 KiB: no ejecutada (falta fio)
+2147483648 bytes (2.1 GB, 2.0 GiB) copied, 5.32773 s, 403 MB/s
+-- Lectura aleatoria 4 KiB (fio, 20 s, profundidad 32):
+  read: IOPS=41.2k, BW=161MiB/s (169MB/s)(3218MiB/20001msec)
+    clat (usec): min=145, max=4397, avg=773.60, stdev=85.42
+     lat (usec): min=163, max=4400, avg=776.46, stdev=85.31
 
 ## Red
 enp12s0          DOWN           
 wlp0s20f3        UP             192.168.18.39/24 fe80::911:ba2:cb76:414c/64 
 enp12s0: enlace=down velocidad=-1 Mb/s
 wlp0s20f3: enlace=up velocidad= Mb/s
-Wi-Fi: canal 44, velocidad de enlace 270 Mbit/s, señal 50/100
+Wi-Fi: canal 44, velocidad de enlace 270 Mbit/s, señal 51/100
 -- ping a la puerta de enlace (192.168.18.1):
-10 packets transmitted, 10 received, 0% packet loss, time 9007ms
-rtt min/avg/max/mdev = 2.954/6.009/24.055/6.106 ms
+10 packets transmitted, 10 received, 0% packet loss, time 9012ms
+rtt min/avg/max/mdev = 2.642/4.578/7.543/1.470 ms
 -- ping a Internet (1.1.1.1):
-10 packets transmitted, 10 received, 0% packet loss, time 9002ms
-rtt min/avg/max/mdev = 12.459/31.112/137.648/38.219 ms
+10 packets transmitted, 10 received, 0% packet loss, time 9013ms
+rtt min/avg/max/mdev = 12.597/14.542/18.693/1.565 ms
 -- Descarga de 100 Mb (proof.ovh.net, máx. 60 s):
-HTTP 200 · 104857600 bytes en 8.588085 s · 12209660 B/s
+HTTP 200 · 104857600 bytes en 16.367570 s · 6406424 B/s

@@ -13,6 +13,10 @@
 | Cómo volvería atrás | `sudo mokutil --delete /var/lib/shim-signed/mok/MOK.der`, reiniciar y confirmar el borrado en la pantalla azul |
 | Qué aprendí | Un disco con Linux que se mueve entre equipos lleva consigo los módulos firmados, pero no la confianza en la clave: eso depende del firmware de cada máquina |
 
+## Estado
+
+- 15/11/2026: paso 1 hecho (`mokutil --list-new` muestra la clave con huella `bf:0b:f4:2f:…:bc:b0`, la misma que firma los módulos). **Pendiente: reiniciar y confirmar en la pantalla azul (pasos 2–4).**
+
 ## Pasos
 
 1. Pedir el registro de la clave. Pide una contraseña de un solo uso: elige una sencilla, solo se usa en el paso 3.
