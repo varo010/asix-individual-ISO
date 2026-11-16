@@ -16,6 +16,7 @@
 ## Estado
 
 - 15/11/2026: paso 1 hecho (`mokutil --list-new` muestra la clave con huella `bf:0b:f4:2f:…:bc:b0`, la misma que firma los módulos). **Pendiente: reiniciar y confirmar en la pantalla azul (pasos 2–4).**
+- 16/11/2026, en el portátil de clase (Secure Boot desactivado): los módulos `vboxdrv`, `vboxnetflt` y `vboxnetadp` cargan y las VM `r-mikrotik`, `pve1` (con VT-x anidado) y `srv-dc` arrancan. Confirma que el problema es solo del firmware de casa. **En casa sigue pendiente la pantalla azul.**
 
 ## Pasos
 
