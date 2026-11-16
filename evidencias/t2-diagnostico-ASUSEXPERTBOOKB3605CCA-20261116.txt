@@ -1,0 +1,71 @@
+# Diagnóstico · ASUSTeK COMPUTER INC. ASUSEXPERTBOOKB3605CCA · 2026-11-16 08:44:25
+
+## Condiciones de la prueba
+Encendido desde: up 44 minutes · carga: 3.66 3.54 3.37
+Cargador conectado: 1 (1 = sí, 0 = batería)
+Gobernador de CPU: powersave
+Perfil de energía: balanced
+VM de VirtualBox en marcha: 0
+Temperatura CPU: +98.0
+
+## CPU · openssl speed sha256 (bloques de 16 KB, 3 s)
+-- 1 hilo:
+sha256          145812.43k   431190.27k  1021127.08k  1556629.16k  1840362.84k  1912231.25k
+-- todos los hilos (18):
+sha256          816761.48k  2690087.34k  7479730.60k 13796791.30k 17585917.16k 17700334.25k
+
+## Memoria
+               total        used        free      shared  buff/cache   available
+Mem:            30Gi       8.5Gi       8.9Gi       1.2Gi        14Gi        22Gi
+Swap:           15Gi          0B        15Gi
+-- Copia en memoria (dd /dev/zero -> /dev/null, 20 GiB en bloques de 1 MiB):
+21474836480 bytes (21 GB, 20 GiB) copied, 0.472572 s, 45.4 GB/s
+-- memtester 1 GiB, 1 pasada:
+Loop 1/1:
+  Compare XOR         : ok
+  Compare SUB         : ok
+  Compare MUL         : ok
+  Compare DIV         : ok
+  Compare OR          : ok
+  Compare AND         : ok
+  Sequential Increment: ok
+Done.
+
+## Disco del sistema
+NAME   SIZE TRAN MODEL
+sda  447.1G usb  KINGSTON SA400S37480G
+    |__ Port 002: Dev 002, If 0, Class=Mass Storage, Driver=uas, 5000M
+-- SMART:
+SMART overall-health self-assessment test result: PASSED
+Warning: This result is based on an Attribute check.
+  9 Power_On_Hours          0x0032   100   100   000    Old_age   Always       -       1574
+ 12 Power_Cycle_Count       0x0032   100   100   000    Old_age   Always       -       486
+187 Reported_Uncorrect      0x0032   100   100   000    Old_age   Always       -       0
+194 Temperature_Celsius     0x0022   032   033   000    Old_age   Always       -       32 (Min/Max 19/33)
+196 Reallocated_Event_Count 0x0032   100   100   000    Old_age   Always       -       0
+199 SATA_CRC_Error_Count    0x0032   100   100   000    Old_age   Always       -       262186
+218 CRC_Error_Count         0x0032   100   100   000    Old_age   Always       -       177
+241 Lifetime_Writes_GiB     0x0032   100   100   000    Old_age   Always       -       1861
+242 Lifetime_Reads_GiB      0x0032   100   100   000    Old_age   Always       -       1376
+-- Escritura secuencial 2 GiB (dd, sin caché):
+2147483648 bytes (2.1 GB, 2.0 GiB) copied, 5.15583 s, 417 MB/s
+-- Lectura secuencial 2 GiB (dd, sin caché):
+2147483648 bytes (2.1 GB, 2.0 GiB) copied, 5.12916 s, 419 MB/s
+-- Lectura aleatoria 4 KiB (fio, 20 s, profundidad 32):
+  read: IOPS=44.0k, BW=172MiB/s (180MB/s)(3437MiB/20001msec)
+    clat (usec): min=145, max=9033, avg=723.42, stdev=157.27
+     lat (usec): min=158, max=9034, avg=726.90, stdev=157.28
+
+## Red
+eno1             UP             172.16.222.27/24 fe80::94c0:d150:186c:e9e8/64 
+wlp1s0           DOWN           
+eno1: enlace=up velocidad=1000 Mb/s
+wlp1s0: enlace=down velocidad= Mb/s
+-- ping a la puerta de enlace (172.16.222.1):
+10 packets transmitted, 10 received, 0% packet loss, time 9201ms
+rtt min/avg/max/mdev = 0.476/0.518/0.608/0.039 ms
+-- ping a Internet (1.1.1.1):
+10 packets transmitted, 0 received, 100% packet loss, time 9213ms
+
+-- Descarga de 100 Mb (proof.ovh.net, máx. 60 s):
+HTTP 200 · 104857600 bytes en 20.166029 s · 5199714 B/s

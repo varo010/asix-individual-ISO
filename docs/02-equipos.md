@@ -7,9 +7,9 @@ RA: FDM RA1. Inventario de los dos equipos, comparativa y cuellos de botella.
 - [x] Inventariar el equipo de clase y el de casa.
 - [x] Compararlos e identificar cuellos de botella.
 - [x] Proponer soluciones ajustadas al hardware disponible.
-- [ ] Ampliación: tests de memoria, disco y red en los dos equipos (casa: hecho; clase: pendiente).
+- [x] Ampliación: tests de memoria, disco y red en los dos equipos.
 - [x] Ampliación: registrar herramienta, condiciones y resultado.
-- [ ] Ampliación: confirmar o descartar con datos los cuellos de botella previstos (casa: hecho; falta clase).
+- [x] Ampliación: confirmar o descartar con datos los cuellos de botella previstos.
 
 ## 0. Punto de partida: un solo disco, dos equipos
 
@@ -38,9 +38,9 @@ N/C = no comprobado todavía.
 | Red cableada | Intel Ethernet, **conectada a 1000 Mb/s** (red del aula) | Realtek RTL8111 Gigabit, **sin cable** | `ip -br a`, `/sys/class/net/*/speed` |
 | Wi-Fi | Realtek RTL8852BE (Wi-Fi 6), sin usar | Intel CNVi (Wi-Fi 6), **en uso**: canal 44 (5 GHz), enlace 270 Mb/s, señal 50/100 | `lspci`, `nmcli dev wifi` |
 | Gráficos | Intel Arc integrada | Intel UHD integrada + NVIDIA dedicada | `lspci` |
-| Batería | N/C | 74,2 Wh de 80 Wh de diseño (93 % de salud) | `/sys/class/power_supply/BAT*` |
+| Batería | 3951 mAh de 4210 mAh de diseño a 11,88 V (≈ 47 de 50 Wh, 94 % de salud), 14 ciclos | 74,2 Wh de 80 Wh de diseño (93 % de salud) | `/sys/class/power_supply/BAT*` |
 | Sistema operativo | Linux Mint 22.3, kernel 6.8 (el del disco USB) | Igual | `/etc/os-release`, `uname -r` |
-| VirtualBox | 7.2.18 + Extension Pack, **funciona** | 7.2.18 + Extension Pack, **no arranca VM** (ver incidencia) | `VBoxManage --version` |
+| VirtualBox | 7.2.18 + Extension Pack, **funciona** (16/11: arrancan `r-mikrotik`, `pve1` con VT-x anidado y `srv-dc`) | 7.2.18 + Extension Pack, **no arranca VM** (ver incidencia) | `VBoxManage --version` |
 
 Evidencias: [inventario de clase](../evidencias/t2-inventario-clase-20261112.txt) · [inventario de casa](../evidencias/t2-inventario-casa-20261115.txt).
 
@@ -75,6 +75,15 @@ Herramienta:, igual en los dos equipos. Usa `openssl speed`, `dd`, `ping` y `cur
 | Casa | Disco (salud) | `smartctl -d sat -H -A` | Con cargador | PASSED; 1572 h encendido; 483 encendidos; 1834 GiB escritos; 0 sectores reasignados; 26 °C. **Errores CRC: atributo 199 = 262185 (valor bruto) y 218 = 177** | El SSD está sano, pero hay **errores de transmisión** en el enlace SATA entre el SSD y el adaptador USB de la caja. Ver apartado 3.1 | ídem |
 | Casa | Red (local) | `ping -c 10` a la puerta de enlace | Wi-Fi 5 GHz, señal 50/100 | 0 % de pérdida, media 4,6–6 ms | Normal en Wi-Fi; en cable sería menos de 1 ms | ídem |
 | Casa | Red (Internet) | `ping` a 1.1.1.1 y descarga de 100 Mb | Igual | 0 % de pérdida, 14–31 ms; descarga entre 6,4 y 12,2 MB/s en dos pruebas | El Wi-Fi varía mucho de una prueba a otra; para descargar ISOs, mejor cable | ídem |
+| Clase | CPU (1 hilo) | `openssl speed sha256` (bloques de 16 KB) | 16/11 · con cargador · `powersave` · sin VM · **con una descarga de 7 GB en curso** (carga previa 3,7) | 1,91 GB/s | Igual que casa con cargador (1,82): en un solo núcleo los dos equipos rinden lo mismo | [clase](../evidencias/t2-diagnostico-ASUSEXPERTBOOKB3605CCA-20261116.txt) |
+| Clase | CPU (18 hilos) | `openssl speed -multi 18 sha256` | Igual · **CPU a 98 °C** | **17,7 GB/s** | La mitad que casa (34,8): menos hilos y, a 98 °C, la CPU ya recorta frecuencia por temperatura. Confirma el cuello de botella previsto | ídem |
+| Clase | Memoria (velocidad) | `dd /dev/zero → /dev/null` (20 GiB) | Igual | 45,4 GB/s | Algo menos que casa (54); tampoco limita | ídem |
+| Clase | Memoria (errores) | `memtester 1024M 1` | Igual | Todas las pruebas `ok` | Sin errores en el GiB probado | ídem |
+| Clase | Disco (secuencial) | `dd` 2 GiB sin caché | Igual | Escritura 417 MB/s · lectura 419 MB/s | Casi igual que en casa (362/403): es el mismo disco y el límite es el puente USB, no el portátil | ídem |
+| Clase | Disco (aleatorio) | `fio` lectura aleatoria 4 KiB, prof. 32, 20 s | Igual | **44.000 IOPS** (172 MiB/s), latencia media 0,72 ms | Igual que en casa (41.200): el disco rinde lo mismo en los dos equipos | ídem |
+| Clase | Disco (salud) | `smartctl -d sat -H -A` | Igual · 1 día después de la prueba de casa | PASSED; 1574 h; 486 encendidos; 1861 GiB escritos; **atributo 199 = 262186 (+1) y 218 = 177 (sin cambios)** | En un día con 3 arranques y 27 GiB escritos (las ISOs) el contador casi no se mueve: los errores CRC son **antiguos**. Ver apartado 3.1 | ídem |
+| Clase | Red (local) | `ping -c 10` a la puerta de enlace | Cable a 1000 Mb/s | 0 % de pérdida, media **0,52 ms** | Diez veces menos que el Wi-Fi de casa (4,6–6 ms) | ídem |
+| Clase | Red (Internet) | `ping` a 1.1.1.1 y descarga de 100 Mb | Igual, con la descarga en curso y la red del aula compartida | Ping: 100 % de pérdida. Descarga: **5,2 MB/s** (HTTP 200) | El ping no sale pero la web sí: la red del aula **bloquea el ping (ICMP) hacia fuera**, no es una avería. La descarga es más lenta que en casa porque la salida a Internet del aula se comparte | ídem |
 
 ### 3.1 Posible avería: errores CRC en el disco USB
 
@@ -82,14 +91,17 @@ Herramienta:, igual en los dos equipos. Usa `openssl speed`, `dd`, `ping` y `cur
 - **Causa probable:** el enlace SATA **dentro de la caja USB**: el conector entre el SSD y la placa adaptadora (JMicron JMS578), o el propio adaptador. Que el disco se desconecte de un portátil y se conecte a otro muchas veces (483 encendidos) favorece los falsos contactos.
 - **Otra causa posible:** que el contador venga de antes (el disco tiene 1572 h de uso) y ya no esté subiendo.
 - **Prueba que las distingue:** anotar los dos contadores, hacer una prueba de disco larga (por ejemplo `fio` 5 minutos) y volver a leerlos. Si **suben**, el problema es actual y está en la caja o el conector. Si **no cambian**, son errores antiguos.
+- **Resultado (16/11, en clase):** el atributo 199 pasó de 262185 a 262186 (+1) y el 218 sigue en 177, tras 3 arranques, 27 GiB escritos y todas las pruebas de disco. **Son errores antiguos**: el enlace funciona bien ahora. Se seguirá mirando en la T7.
 - **Solución si suben:** volver a encajar el SSD en la caja o cambiar la caja USB (son baratas); en un equipo de sobremesa, cambiar el cable SATA.
 
-## 4. Conclusión (provisional)
+## 4. Conclusión
 
 - El **cuello de botella común** es el **disco USB**, porque es el mismo en los dos equipos y todas las VM dependen de él: unos 400 MB/s en secuencial. En aleatorio rinde bien (41.200 IOPS), así que se **descarta** que sea un problema grave con unas pocas VM. Se comprobará con carga real en la T7.
-- **Riesgo encontrado:** errores CRC en el enlace SATA de la caja USB (apartado 3.1). Hay que vigilarlos, porque todo el entorno está en ese disco.
+- **Confirmado con los dos equipos:** el disco da lo mismo en clase y en casa (≈ 400 MB/s y 41.000–44.000 IOPS). El límite es el disco USB, no el portátil.
+- **Riesgo descartado por ahora:** los errores CRC del disco son antiguos; en un día casi no han subido (apartado 3.1). Se vigilan, porque todo el entorno está en ese disco.
 - La **RAM** es lo que limita **cuántas VM** arrancan a la vez, igual en los dos equipos (30–31 GiB).
-- **Confirmado:** el equipo de casa tiene casi el doble de CPU, pero solo lo aprovecha con el cargador conectado (+73 % en un núcleo).
+- **Confirmado:** el equipo de casa tiene el doble de CPU con todos los hilos (34,8 frente a 17,7 GB/s), pero solo lo aprovecha con el cargador (+73 % en un núcleo). En un núcleo los dos rinden igual. El de clase se calienta mucho (98 °C): para tareas largas, mejor no tener otras cargas a la vez.
+- **Red:** en clase el cable da latencias de 0,5 ms; en casa el Wi-Fi da 5 ms y velocidades variables. Para descargar ISOs grandes, mejor en clase o con cable.
 - El entorno vive en el disco USB y funciona en los dos equipos, una vez resuelta la incidencia de Secure Boot en casa.
 
 ## 5. Comparación con el inventario del grupo
