@@ -8,7 +8,7 @@ RA: FDM RA1. Inventario de los dos equipos, comparativa y cuellos de botella.
 - [x] Compararlos e identificar cuellos de botella.
 - [x] Proponer soluciones ajustadas al hardware disponible.
 - [x] Ampliación: tests de memoria, disco y red en los dos equipos.
-- [x] Ampliación: registrar herramienta, condiciones y resultado.
+- [x] Ampliación: registrar herramienta, condiciones y resultado (apartado 3).
 - [x] Ampliación: confirmar o descartar con datos los cuellos de botella previstos.
 
 ## 0. Punto de partida: un solo disco, dos equipos
@@ -60,7 +60,7 @@ Con Secure Boot activado, el portátil solo deja cargar controladores firmados c
 
 ## 3. Ampliación: tests de diagnóstico
 
-Herramienta:, igual en los dos equipos. Usa `openssl speed`, `dd`, `ping` y `curl`; con `sudo` añade `smartctl`, `fio` y `memtester` (instalados con `sudo apt install fio smartmontools memtester sysstat`).
+Las mismas pruebas, con los mismos comandos, en los dos equipos: `openssl speed`, `dd`, `ping` y `curl`; con `sudo`, también `smartctl`, `fio` y `memtester` (instalados con `sudo apt install fio smartmontools memtester sysstat`).
 
 **Cómo leer los resultados:**
 

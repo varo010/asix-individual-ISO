@@ -16,4 +16,4 @@ RA: ISO RA3. Resumen de todas las copias y, como ampliación, su automatización
 
 ## 3. Ampliación: automatización
 
-> Tarea programada, dónde está y cómo se comprueba que funciona.
+> Tarea programada: qué hace, cuándo se ejecuta y cómo se comprueba que funciona.

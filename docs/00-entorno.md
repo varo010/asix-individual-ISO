@@ -46,7 +46,7 @@ Dentro de los nodos Proxmox irán un contenedor y una VM Debian sin escritorio p
 ### Cómo se crearon las VM y de dónde salen las imágenes
 
 - Las 10 VM se crearon el 15/11/2026 con `VBoxManage` (VirtualBox por comandos), todas en el grupo `ISO-individual`. Así solo se crea el «hardware» virtual: la instalación se hace a mano dentro de cada VM (T5).
-- Antes de poner una ISO en una VM, calcula su SHA256 (una «huella» del fichero: si cambia un solo bit, la huella es otra) y lo compara con el que publica el fabricante. Solo se usan las que coinciden. Resultado: [evidencias/t5-isos-sha256-20261115.txt](../evidencias/t5-isos-sha256-20261115.txt).
+- Antes de poner una ISO en una VM, calculo su SHA256 con `sha256sum` (una «huella» del fichero: si cambia un solo bit, la huella es otra) y lo comparo con el que publica el fabricante. Solo se usan las que coinciden. Resultado: [evidencias/t5-isos-sha256-20261115.txt](../evidencias/t5-isos-sha256-20261115.txt).
 - **Windows Server 2025 (evaluación):** Microsoft no publica la huella (hash). Se acepta porque viene de su servidor oficial por HTTPS y la descarga está completa; se apunta su huella para demostrar más adelante que es la misma.
 - **Windows 11:** la `w11.iso` que había en el disco no se usa: no se sabe de dónde salió y es una compilación de 2023. Falta bajar la actual (español, 64 bits) de <https://www.microsoft.com/es-es/software-download/windows11>, comprobar su SHA256 y ponerla en `cli-win11`.
 - Las VM aún no arrancan en el portátil de casa hasta resolver [INC-01](../incidencias/INC-01-virtualbox-secure-boot-casa.md) (Secure Boot).
