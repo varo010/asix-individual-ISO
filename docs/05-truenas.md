@@ -32,5 +32,5 @@ RA: ISO RA1 (instalación y red), ISO RA3 (espacio de copias).
 | Aspecto | Grupo 3 | Mi entorno |
 |---|---|---|
 | Equipo | PC físico Ticnova E70 (8 GB RAM) | VM |
-| Disco de datos | HDD de 2 TB en stripe (sin redundancia) | Disco virtual N/C |
-| Versión | TrueNAS 25.10.7 | N/C |
+| Disco de datos | HDD de 2 TB en stripe (sin redundancia) | Disco virtual de 20 GB |
+| Versión | TrueNAS 25.10.7 | TrueNAS 25.10.8 |

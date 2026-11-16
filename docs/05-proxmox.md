@@ -44,5 +44,5 @@ RA: ISO RA1 (instalación, red, clúster, migración), ISO RA3 (copias), ISO RA6
 
 | Aspecto | Grupo 3 | Mi entorno |
 |---|---|---|
-| Dónde corren los nodos | 3 VM en el servidor Proxmox del centro (Proxmox anidado) | N/C VM en VirtualBox (Proxmox anidado) |
-| Nodos | 3 (`pve`, `pve2`, `pve3`), ~4 GiB cada uno | N/C |
+| Dónde corren los nodos | 3 VM en el servidor Proxmox del centro (Proxmox anidado) | 2 VM en mi VirtualBox (Proxmox anidado) |
+| Nodos | 3 (`pve`, `pve2`, `pve3`), ~4 GiB cada uno | 2 (`pve1`, `pve2`), 4 GB cada uno |

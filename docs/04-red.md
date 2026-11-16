@@ -47,7 +47,7 @@ flowchart TB
 | `lan-iso` | Red interna | LAN 192.168.27.0/24 | Adaptador 2 del router y adaptador 1 de todas las demás VM |
 
 **Por qué la WAN en NAT:**
-- Funciona igual en clase (cable) y en casa (Wi-Fi). El adaptador puente sobre Wi-Fi suele dar problemas, porque muchos puntos de acceso no aceptan varias MAC por un mismo cliente.
+- Funciona igual en clase (cable) y en casa (Wi-Fi). El adaptador puente sobre Wi-Fi suele dar problemas: muchos routers Wi-Fi no aceptan que un mismo portátil use varias direcciones MAC.
 - No toca la red del aula: mi router no pide IP ni aparece en 172.16.222.0/24, y es imposible que mi DHCP de pruebas se escape a la red compartida (el enunciado lo prohíbe).
 - Inconveniente aceptado: hay **doble NAT** (mi router y VirtualBox). Desde fuera no se puede entrar a mi LAN sin reenviar puertos, pero no hace falta.
 
@@ -55,7 +55,7 @@ flowchart TB
 - Es un switch virtual que solo une a las VM que usan el nombre `lan-iso`. El anfitrión y la red real no la ven: la única salida es mi router, como en una empresa.
 - Puente o solo-anfitrión mezclarían mi LAN con la red física o con el anfitrión, y el router dejaría de ser el único camino.
 
-**Ajuste para Proxmox:** los adaptadores de `pve1` y `pve2` llevan el *modo promiscuo* en **Permitir todo**. Las VM y contenedores de dentro de Proxmox salen con su propia MAC por la tarjeta del nodo; sin modo promiscuo, VirtualBox descarta esas tramas y no tendrían red.
+**Ajuste para Proxmox:** los adaptadores de `pve1` y `pve2` llevan el *modo promiscuo* en **Permitir todo**. Las VM y contenedores de dentro de Proxmox salen por la tarjeta del nodo, pero cada uno con su propia dirección MAC. Normalmente VirtualBox solo deja pasar el tráfico de la MAC de la VM; sin el modo promiscuo, el resto lo tira y no tendrían red.
 
 ## 3. Plan de direcciones
 

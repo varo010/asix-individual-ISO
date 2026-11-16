@@ -4,9 +4,9 @@ RA: FDM RA1. Enunciado, Tasca 0 individual: preparar un entorno de pruebas en mi
 
 ## Lo que pide la rúbrica
 
-- [ ] Preparar el entorno propio de pruebas (diseñado; VM pendientes de crear).
+- [x] Preparar el entorno propio de pruebas (las 10 VM creadas).
 - [x] Identificar los recursos físicos y justificar sus limitaciones.
-- [ ] Ampliación: documentarlo en Markdown y Git (repositorio local hecho; falta publicarlo en GitHub).
+- [x] Ampliación: documentarlo en Markdown y Git ([repositorio en GitHub](https://github.com/varo010/asix-individual-ISO)).
 
 ## 1. Dónde vive el entorno
 
@@ -23,7 +23,7 @@ RA: FDM RA1. Enunciado, Tasca 0 individual: preparar un entorno de pruebas en mi
 
 ## 2. Máquinas virtuales previstas
 
-Discos **dinámicos**: el tamaño es el máximo, pero solo ocupan lo que se escribe.
+Discos **dinámicos**: el tamaño es el máximo, pero solo ocupan lo que se escribe. vCPU = núcleos de CPU que ve la VM.
 
 | VM | Función | SO | vCPU | RAM | Disco | Red | Estado |
 |---|---|---|---|---|---|---|---|
@@ -46,8 +46,8 @@ Dentro de los nodos Proxmox irán un contenedor y una VM Debian sin escritorio p
 ### Cómo se crearon las VM y de dónde salen las imágenes
 
 - Las 10 VM se crearon el 15/11/2026 con `VBoxManage` (VirtualBox por comandos), todas en el grupo `ISO-individual`. Así solo se crea el «hardware» virtual: la instalación se hace a mano dentro de cada VM (T5).
-- Antes de poner una ISO en una VM, calcula su SHA256 y lo compara con el que publica el fabricante. Solo se usan las que coinciden. Resultado: [evidencias/t5-isos-sha256-20261115.txt](../evidencias/t5-isos-sha256-20261115.txt).
-- **Windows Server 2025 (evaluación):** Microsoft no publica el hash. Se acepta porque viene de su servidor oficial por HTTPS y la descarga está completa; se apunta su hash para demostrar más adelante que es la misma.
+- Antes de poner una ISO en una VM, calcula su SHA256 (una «huella» del fichero: si cambia un solo bit, la huella es otra) y lo compara con el que publica el fabricante. Solo se usan las que coinciden. Resultado: [evidencias/t5-isos-sha256-20261115.txt](../evidencias/t5-isos-sha256-20261115.txt).
+- **Windows Server 2025 (evaluación):** Microsoft no publica la huella (hash). Se acepta porque viene de su servidor oficial por HTTPS y la descarga está completa; se apunta su huella para demostrar más adelante que es la misma.
 - **Windows 11:** la `w11.iso` que había en el disco no se usa: no se sabe de dónde salió y es una compilación de 2023. Falta bajar la actual (español, 64 bits) de <https://www.microsoft.com/es-es/software-download/windows11>, comprobar su SHA256 y ponerla en `cli-win11`.
 - Las VM aún no arrancan en el portátil de casa hasta resolver [INC-01](../incidencias/INC-01-virtualbox-secure-boot-casa.md) (Secure Boot).
 
@@ -68,9 +68,9 @@ Dentro de los nodos Proxmox irán un contenedor y una VM Debian sin escritorio p
 
 **CPU: no es el límite.** 17 vCPU frente a 18 hilos en clase y 32 en casa. En casa, con batería, la CPU rinde mucho menos ([02-equipos](02-equipos.md)): se trabajará con cargador.
 
-**Disco: limita la velocidad, no la cantidad.** Todas las VM comparten el SSD por USB (~400 MB/s secuencial). Si todas escribieran el máximo de su disco, sumarían unos 280 GB, más de lo libre (~227 GB). Con discos dinámicos ocuparán bastante menos, pero hay que vigilar el espacio. Las VM antiguas de otras prácticas ocupan unos 64 GB y se pueden borrar si hace falta.
+**Disco: limita la velocidad, no la cantidad.** Todas las VM comparten el SSD por USB (~400 MB/s con ficheros grandes). Si todas escribieran el máximo de su disco, sumarían unos 280 GB, más de lo libre (~227 GB). Con discos dinámicos ocuparán bastante menos, pero hay que vigilar el espacio. Las VM antiguas de otras prácticas ocupan unos 64 GB y se pueden borrar si hace falta.
 
-**Proxmox dentro de VirtualBox:** necesita *virtualización anidada* (VT-x anidado). Las VM de dentro de Proxmox irán despacio y con poca RAM: sirven para probar el clúster y la migración, no para trabajar con ellas.
+**Proxmox dentro de VirtualBox:** necesita *virtualización anidada*: que la VM pueda crear a su vez otras VM. Las VM de dentro de Proxmox irán despacio y con poca RAM: sirven para probar el clúster y la migración, no para trabajar con ellas.
 
 **Firmware:** en el portátil de casa hay que registrar la clave de VirtualBox para que funcione con Secure Boot ([INC-01](../incidencias/INC-01-virtualbox-secure-boot-casa.md)).
 
@@ -85,10 +85,10 @@ Dentro de los nodos Proxmox irán un contenedor y una VM Debian sin escritorio p
 | NAS | TrueNAS en un PC físico (SSD + HDD de 2 TB) | TrueNAS en VM con discos virtuales |
 | Clúster Proxmox | 3 nodos anidados en el servidor del centro | 2 nodos anidados en VirtualBox |
 | Clientes | Portátiles físicos de los compañeros | 2 VM (Windows 11 y Ubuntu) |
-| Qué simulo y qué no | — | Simulo el switch (red interna) y el router físico (CHR). No hay hardware de red real ni alta disponibilidad: con 2 nodos no hay quórum si uno cae |
+| Qué simulo y qué no | — | Simulo el switch (red interna) y el router físico (CHR). No hay hardware de red real ni alta disponibilidad: con 2 nodos, si uno cae el otro no tiene mayoría (quórum) para seguir solo |
 
 ## 5. Problemas encontrados
 
 | Problema | Causa | Solución | Incidencia |
 |---|---|---|---|
-| VirtualBox no arranca VM en el portátil de casa | Secure Boot activado y clave de los módulos sin registrar en ese firmware | Registrar la clave (MOK) | [INC-01](../incidencias/INC-01-virtualbox-secure-boot-casa.md) |
+| VirtualBox no arranca VM en el portátil de casa | Secure Boot activado y la clave de los controladores de VirtualBox sin registrar en ese portátil | Registrar la clave en el portátil de casa | [INC-01](../incidencias/INC-01-virtualbox-secure-boot-casa.md) |
