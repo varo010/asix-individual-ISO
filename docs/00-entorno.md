@@ -35,7 +35,7 @@ Discos **dinámicos**: el tamaño es el máximo, pero solo ocupan lo que se escr
 | `pve2` | Nodo Proxmox 2 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
 | `srv-dc` | Dominio | Windows Server 2025 (evaluación 180 días) | 2 | 4 GB | 50 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
 | `srv-linux` | Servidor de infraestructura (y RAID de la T6) | Debian 13.7 sin escritorio | 1 | 1 GB | 10 GB + 4 discos de 1 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
-| `cli-win11` | Cliente Windows | Windows 11 Pro | 2 | 4 GB | 64 GB (TPM 2.0, UEFI, Secure Boot) | LAN | Creada; **falta ISO de W11** (ver abajo) |
+| `cli-win11` | Cliente Windows | Windows 11 Pro (ISO oficial en español, compilación 26300) | 2 | 4 GB | 64 GB (TPM 2.0, UEFI, Secure Boot) | LAN | Creada; ISO comprobada puesta; sin instalar |
 | `cli-linux` | Cliente GNU/Linux | Ubuntu Desktop 26.04.1 LTS | 2 | 3 GB | 25 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
 
 Total si estuvieran todas encendidas: **unos 31 GB de RAM y 17 vCPU**.
@@ -46,9 +46,9 @@ Dentro de los nodos Proxmox irán un contenedor y una VM Debian sin escritorio p
 ### Cómo se crearon las VM y de dónde salen las imágenes
 
 - Las 10 VM se crearon el 15/11/2026 con `VBoxManage` (VirtualBox por comandos), todas en el grupo `ISO-individual`. Así solo se crea el «hardware» virtual: la instalación se hace a mano dentro de cada VM (T5).
-- Antes de poner una ISO en una VM, calculo su SHA256 con `sha256sum` (una «huella» del fichero: si cambia un solo bit, la huella es otra) y lo comparo con el que publica el fabricante. Solo se usan las que coinciden. Resultado: [evidencias/t5-isos-sha256-20261115.txt](../evidencias/t5-isos-sha256-20261115.txt).
+- Antes de poner una ISO en una VM, calculo su SHA256 con `sha256sum` (una «huella» del fichero: si cambia un solo bit, la huella es otra) y lo comparo con el que publica el fabricante. Solo se usan las que coinciden. Resultado: [evidencias/t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha256-20261116.txt).
 - **Windows Server 2025 (evaluación):** Microsoft no publica la huella (hash). Se acepta porque viene de su servidor oficial por HTTPS y la descarga está completa; se apunta su huella para demostrar más adelante que es la misma.
-- **Windows 11:** la `w11.iso` que había en el disco no se usa: no se sabe de dónde salió y es una compilación de 2023. Falta bajar la actual (español, 64 bits) de <https://www.microsoft.com/es-es/software-download/windows11>, comprobar su SHA256 y ponerla en `cli-win11`.
+- **Windows 11:** la `w11.iso` que había en el disco **no se usa**: no se sabe de dónde salió y es una versión de 2023. El 16/11/2026 descargué la actual (español, 64 bits) de <https://www.microsoft.com/es-es/software-download/windows11>. Microsoft publica su huella en la misma página («Verificar la descarga») y **coincide**: `98287037…72a14f9a`.
 - Las VM aún no arrancan en el portátil de casa hasta resolver [INC-01](../incidencias/INC-01-virtualbox-secure-boot-casa.md) (Secure Boot).
 
 ## 3. Qué puedo arrancar a la vez y qué no (limitaciones)

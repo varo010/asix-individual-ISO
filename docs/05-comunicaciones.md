@@ -14,7 +14,7 @@ RA: ISO RA1 (instalación, red, filtrado), ISO RA3 (copia y recuperación), ISO 
 | OPNsense | 26.7, amd64 | <https://pkg.opnsense.org/releases/26.7/> (`OPNsense-26.7-dvd-amd64.iso.bz2`) | Sí, del `.bz2` | `95cafedd…186bfb` ✅ coincide | 15/11/2026 |
 | Debian | 13.7.0, amd64, netinst | <https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/> | Sí (`SHA256SUMS`) | `a7ef94ac…ce6167e355` ✅ coincide | 15/11/2026 |
 
-Comprobación completa: [t5-isos-sha256-20261115.txt](../evidencias/t5-isos-sha256-20261115.txt). Cómo se hace: `sha256sum fichero` y comparar el resultado con el que publica el fabricante en su web.
+Comprobación completa: [t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha256-20261116.txt). Cómo se hace: `sha256sum fichero` y comparar el resultado con el que publica el fabricante en su web.
 
 ## Checklist por router
 

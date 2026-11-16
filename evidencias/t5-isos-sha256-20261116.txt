@@ -1,4 +1,4 @@
-# Comprobación SHA256 de las imágenes · 2026-11-15 16:02:37
+# Comprobación SHA256 de las imágenes · 2026-11-16 11:08:16
 
 OK        chr-7.24.6.vdi.zip
           calculado: 746a4975f70ed8d200f2c7fc8cfae370f727f7627d76bae583369ac5ed47faae
@@ -22,7 +22,10 @@ OK        ubuntu-26.04.1-desktop-amd64.iso
 SIN HASH  26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso · origen: Centro de evaluación de Microsoft (go.microsoft.com → software-static.download.prss.microsoft.com, HTTPS)
 ACEPTADA  26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso · sin hash oficial; origen oficial por HTTPS, descarga completa
           calculado: d0ef4502e350e3c6c53c15b1b3020d38a5ded011bf04998e950720ac8579b23d
-SIN HASH  w11.iso · origen: N/C: descargada antes de esta práctica; origen desconocido · NO SE USA
+OK        Windows11_Client_x64_es-es_26300_9457.iso
+          calculado: 9828703784880421e6602504dfd99064e4cb739cc9b20aba22e3934372a14f9a
+          oficial:   9828703784880421e6602504dfd99064e4cb739cc9b20aba22e3934372a14f9a · origen: https://www.microsoft.com/es-es/software-download/windows11 («Verificar la descarga», Español 64-bit)
+RECHAZADA w11.iso · origen desconocido y versión de 2023: no se usa
 
 Aprobadas (se ponen en las VM):
   /home/batoi/ISOs/chr-7.24.6.vdi.zip
@@ -34,3 +37,4 @@ Aprobadas (se ponen en las VM):
   /home/batoi/ISOs/TrueNAS-SCALE-25.10.8.iso
   /home/batoi/ISOs/ubuntu-26.04.1-desktop-amd64.iso
   /home/batoi/ISOs/26100.1742.240906-0331.ge_release_svc_refresh_SERVER_EVAL_x64FRE_en-us.iso
+  /home/batoi/Descargas/Windows11_Client_x64_es-es_26300_9457.iso
