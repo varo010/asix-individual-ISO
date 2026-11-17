@@ -23,7 +23,7 @@ Comprobación completa: [t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha2
 | Instalar y comprobar versión y funcionamiento | [x] | [ ] | [ ] |
 | Usuario(s) de administración | [x] | [ ] | [ ] |
 | Red WAN y LAN | [x] | [ ] | [ ] |
-| Acceso a Internet desde la LAN | [ ] el router sale; falta probarlo desde un cliente | [ ] | [ ] |
+| Acceso a Internet desde la LAN | [x] | [ ] | [ ] |
 | Conexión permitida y bloqueada + registro interpretado | [ ] | [ ] | [ ] |
 | Copia de la configuración en el servidor de copias | [ ] | [ ] | [ ] |
 | Fallo provocado y recuperación | [ ] | [ ] | [ ] |
@@ -104,7 +104,22 @@ Después, la NAT de VirtualBox hace lo mismo otra vez (cambia 10.0.2.15 por la I
 | `/ping 10.0.2.2 count=3` | 3 de 3 respuestas, menos de 0,4 ms | El router llega a la puerta de enlace de la NAT de VirtualBox |
 | `/tool fetch url="http://example.com"` | `status: finished`, código 200 | El router **sale a Internet** y el **DNS funciona** (ha traducido `example.com` a una IP) |
 
-No uso `ping` a Internet porque la red del aula lo bloquea (se vio en la [T2](02-equipos.md)); la descarga de una web sí pasa. Falta comprobar que **un cliente de la LAN** recibe IP por DHCP y sale a Internet.
+No uso `ping` a Internet porque la red del aula lo bloquea (se vio en la [T2](02-equipos.md)); la descarga de una web sí pasa.
+
+**Comprobación desde un cliente de la LAN** (17/11/2026). Uso `cli-linux` arrancado desde la ISO de Ubuntu en modo **Probar Ubuntu**, sin instalar: basta para probar la red.
+
+| Prueba | Resultado | Qué significa |
+|---|---|---|
+| `ip -4 a` | `192.168.27.199/24 … dynamic` en `enp0s3` | IP dentro del rango .100–.199; **dynamic** = recibida por DHCP. `enp0s3` es la tarjeta de la VM conectada a `lan-iso` |
+| | `valid_lft 1407sec` | Quedan unos 23 min del préstamo de 30; el cliente lo renueva solo antes de que caduque |
+| `ip route` | `default via 192.168.27.1 … proto dhcp` | La puerta de enlace es el router, también recibida por DHCP |
+| `resolvectl` | `DNS Servers: 192.168.27.1` | El DNS es el router |
+| Firefox → `www.wikipedia.org` | La página carga (HTTPS) | Funcionan **juntos** el DHCP, el DNS del router y el NAT |
+| WebFig → **IP → DHCP Server → Leases** | 192.168.27.199, MAC `08:00:27:8B:D9:75`, *host* `ubuntu`, caduca en 28 min | El router apunta **a quién ha prestado cada IP**: es la misma máquina vista desde el otro lado |
+
+Ha recibido la **.199** y no la .100: MikroTik reparte las direcciones del *pool* empezando por el final. Lo importante es que está dentro del rango.
+
+Evidencias: [IP, rutas y DNS del cliente](<../evidencias/t5-mikrotik-09-cliente-dhcp-20261117.png>) · [web abierta](<../evidencias/t5-mikrotik-10-cliente-internet-20261117.png>) · [préstamos del DHCP](<../evidencias/t5-mikrotik-11-dhcp-leases-20261117.png>)
 
 ### Conexión permitida y bloqueada
 ### Copia de la configuración
