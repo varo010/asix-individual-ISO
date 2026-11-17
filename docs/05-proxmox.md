@@ -16,6 +16,8 @@ RA: ISO RA1 (instalación, red, clúster, migración), ISO RA3 (copias), ISO RA6
 
 ## 1. Nodos
 
+En el clúster solo van las pruebas de Proxmox (un contenedor y una VM Debian sin escritorio). **Windows Server no va dentro del clúster**: es una VM aparte, `srv-dc` ([05-servidores](05-servidores.md)).
+
 | Nodo | vCPU | RAM | Disco | IP | Virtualización anidada |
 |---|---|---|---|---|---|
 

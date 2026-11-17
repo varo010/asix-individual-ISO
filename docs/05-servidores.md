@@ -15,6 +15,9 @@ RA: ISO RA1 (instalación y red), ISO RA3 (copias).
 
 ## Windows Server 2025
 
+> **Va en una VM aparte, fuera del clúster Proxmox** (indicación del profesorado). `srv-dc` es una VM de VirtualBox con sus propios recursos (2 vCPU, 4 GB, 50 GB) y no depende de `pve1` ni `pve2`.
+> **Por qué:** el clúster corre con virtualización anidada (una VM dentro de otra), que es más lenta y más delicada. Si un nodo falla o va justo de RAM, el dominio caería con él, y todos los equipos que dependen del dominio se quedarían sin poder iniciar sesión. Separado, el servidor más importante no depende de la parte más frágil del entorno.
+
 ### Instalación (edición, licencia de evaluación, requisitos)
 ### Usuario de administración
 ### Red
