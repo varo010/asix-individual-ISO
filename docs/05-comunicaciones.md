@@ -273,7 +273,9 @@ curl: (28) Connection timed out after 10003 milliseconds
 >
 > Es el comando de subir **al revés**: sin `upload=yes` fetch **descarga**, y ahora el **origen** (`src-path`) es el NAS y el **destino** (`dst-path`) el router.
 
-Después compruebo con `/file print` que el `.backup` vuelve a medir 21,6 KiB, y lo cargo:
+Después compruebo que el `.backup` ha vuelto al router y mide 21,6 KiB, igual que el original. Solo bajo el `.backup` porque es el que sirve para restaurar; el `.rsc` sigue guardado en el NAS. → [captura](<../evidencias/t5-mikrotik-26-backup-bajado-del-nas-20261117.png>)
+
+Y lo cargo:
 
 > **🔁 Comando para RESTAURAR la copia en el MikroTik**
 >
