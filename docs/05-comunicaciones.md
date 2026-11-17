@@ -25,8 +25,8 @@ Comprobación completa: [t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha2
 | Red WAN y LAN | [x] | [ ] | [ ] |
 | Acceso a Internet desde la LAN | [x] | [ ] | [ ] |
 | Conexión permitida y bloqueada + registro interpretado | [x] | [ ] | [ ] |
-| Copia de la configuración en el servidor de copias | [ ] | [ ] | [ ] |
-| Fallo provocado y recuperación | [ ] | [ ] | [ ] |
+| Copia de la configuración en el servidor de copias | [x] | [ ] | [ ] |
+| Fallo provocado y recuperación | [x] | [ ] | [ ] |
 
 ## MikroTik (CHR)
 
@@ -190,7 +190,119 @@ Se lee igual. Lo nuevo: **`TCP (SYN)`** es el primer paso de una conexión TCP (
 ⚠️ El registro está en **memoria** (`memory`): se borra al reiniciar el router. Para guardarlo habría que enviarlo a un servidor de registros o a disco.
 
 ### Copia de la configuración
+
+**Dónde se guarda:** en el NAS ([TrueNAS](05-truenas.md)), en la carpeta `/mnt/copias/mikrotik`, con un usuario `mikrotik` que solo sirve para esto. Una copia que se queda solo en el router no sirve: si el router se rompe, la copia se pierde con él.
+
+**Dos tipos de copia** (17/11/2026). Hago las dos porque sirven para cosas distintas:
+
+| | **Backup** (`.backup`) | **Export** (`.rsc`) |
+|---|---|---|
+| Qué es | Una «foto» completa del router en un fichero que no se puede leer | Un fichero de texto con los comandos de la configuración |
+| Incluye | Todo, también usuarios y contraseñas | La configuración, sin contraseñas |
+| Sirve para | Dejar **el mismo router** como estaba | Leerla, compararla o aplicarla a **otro router** |
+| Cómo se hace | **Files → Backup**, nombre `r-mikrotik-20261117` y **contraseña** (el fichero queda cifrado) | En **Terminal**: `/export file=r-mikrotik-20261117` |
+| Tamaño | 21,6 KiB | 976 bytes |
+
+Le pongo contraseña al backup porque dentro van las contraseñas del router: aunque alguien se llevara el fichero del NAS, no podría leerlas.
+
+→ [ficheros creados en el router](<../evidencias/t5-mikrotik-17-ficheros-copia-20261117.png>) · [`/file print`](<../evidencias/t5-mikrotik-18-ficheros-router-20261117.png>)
+
+**Subir las copias al NAS.** El router las envía por **SFTP** (copiar ficheros por la red de forma cifrada, sobre SSH) con su herramienta **fetch**. En **Terminal**:
+
+> **⬆️ Comando para SUBIR una copia del MikroTik al NAS**
+>
+> ```
+> /tool fetch upload=yes mode=sftp address=192.168.27.10 user=mikrotik password=******** src-path=r-mikrotik-20261117.backup dst-path=/mnt/copias/mikrotik/r-mikrotik-20261117.backup
+> ```
+>
+> Para el export es el mismo comando cambiando `.backup` por `.rsc` en los dos nombres.
+
+| Parte | Qué significa |
+|---|---|
+| `upload=yes` | **Subir** el fichero (sin esto, fetch descarga) |
+| `mode=sftp` | Enviarlo por SFTP, cifrado |
+| `address=192.168.27.10` | La IP del NAS |
+| `user=… password=…` | El usuario `mikrotik` del NAS (la contraseña no la pongo aquí) |
+| `src-path` | **Origen**: el fichero en el router |
+| `dst-path` | **Destino**: dónde se guarda en el NAS |
+
+Al acabar tiene que decir `status: finished`.
+
+**Comprobación en el NAS**, entrando por SFTP desde `cli-linux` (`sftp mikrotik@192.168.27.10` y `ls -l`): → [captura](<../evidencias/t5-mikrotik-19-copias-en-nas-20261117.png>)
+
+```
+-rw-r--r--  ? mikrotik mikrotik  22149 Nov 17 11:25 r-mikrotik-20261117.backup
+-rw-r--r--  ? mikrotik mikrotik    976 Nov 17 11:28 r-mikrotik-20261117.rsc
+```
+
+Los tamaños son **los mismos que en el router** (22149 bytes = 21,6 KiB; 976 bytes). Comparar el tamaño en el origen y en el destino es una forma sencilla de ver que la copia no ha llegado cortada.
+
+**Problemas que tuve:**
+- Al hacer el export escribí `file=r-mikrotik-20261117.backup` y RouterOS añadió `.rsc` detrás: salió `r-mikrotik-20261117.backup.rsc`. Funcionaba, pero el nombre confundía.
+- Luego intenté subir `r-mikrotik-20261117.rsc`, que no existía en el router. El error fue `cannot open file: No such file or directory`: el fallo estaba en el **origen** (el router), no en el NAS. Aun así, el NAS creó un fichero vacío de 0 bytes con ese nombre.
+- Lo arreglé dentro del NAS por SFTP: borré el fichero vacío (`rm`) y cambié el nombre del otro (`rename … r-mikrotik-20261117.rsc`).
+
 ### Fallo y recuperación
+
+**Qué simulo:** un desastre doble. Alguien borra la regla de NAT (la LAN se queda sin Internet) **y además** se pierden los ficheros del router. Así la recuperación tiene que salir del NAS, no del propio router.
+
+**1. Antes del fallo.** Desde `cli-linux`, `curl -I https://www.wikipedia.org` devuelve `HTTP/2 200` (la web responde «OK»). → [captura](<../evidencias/t5-mikrotik-20-antes-fallo-web-ok-20261117.png>)
+
+Uso `curl` y no `ping` porque la red del aula no deja pasar el ping hacia Internet (se vio en la [T2](02-equipos.md)). `curl -I` pide a la web solo la cabecera de la respuesta, sin descargar la página.
+
+**2. Provoco el fallo** en WebFig:
+- **IP → Firewall → NAT**: borro la regla *masquerade*. → [NAT vacío](<../evidencias/t5-mikrotik-23-fallo-nat-vacio-20261117.png>)
+- **Files**: borro los dos ficheros de copia. Solo queda `skins`, una carpeta del sistema. → [captura](<../evidencias/t5-mikrotik-22-fallo-ficheros-borrados-20261117.png>)
+
+**3. Compruebo que está roto:** → [captura](<../evidencias/t5-mikrotik-21-fallo-web-timeout-20261117.png>)
+
+```
+curl -I --max-time 10 https://www.wikipedia.org
+curl: (28) Connection timed out after 10003 milliseconds
+```
+
+`--max-time 10` = esperar como mucho 10 segundos. La petición sale con la IP privada 192.168.27.199, nadie en Internet sabe devolverle la respuesta y se agota el tiempo (*timed out*).
+
+**4. Recupero desde el NAS.** El router **sí llega al NAS aunque no haya NAT**: el NAT solo hace falta para salir a Internet, y el NAS está dentro de la LAN. Esta es una ventaja de tener las copias en la red local.
+
+> **⬇️ Comando para BAJAR la copia del NAS al MikroTik**
+>
+> ```
+> /tool fetch mode=sftp address=192.168.27.10 user=mikrotik password=******** src-path=/mnt/copias/mikrotik/r-mikrotik-20261117.backup dst-path=r-mikrotik-20261117.backup
+> ```
+>
+> Es el comando de subir **al revés**: sin `upload=yes` fetch **descarga**, y ahora el **origen** (`src-path`) es el NAS y el **destino** (`dst-path`) el router.
+
+Después compruebo con `/file print` que el `.backup` vuelve a medir 21,6 KiB, y lo cargo:
+
+> **🔁 Comando para RESTAURAR la copia en el MikroTik**
+>
+> ```
+> /system backup load name=r-mikrotik-20261117.backup password=********
+> ```
+>
+> Aquí la contraseña es la que puse **al crear el backup**, no la del usuario del NAS. Pregunta `Restore and reboot? [y/N]`: con `y` carga la copia y **reinicia el router**.
+
+Durante el reinicio (unos 20-30 segundos) WebFig pierde la conexión. Es normal.
+
+**5. Compruebo la recuperación:**
+
+| Prueba | Resultado | Evidencia |
+|---|---|---|
+| **IP → Firewall → NAT** | La regla 0 `masquerade`, `srcnat`, salida `ether1`, ha vuelto y ya tiene tráfico (5 paquetes) | [captura](<../evidencias/t5-mikrotik-24-recuperado-nat-20261117.png>) |
+| `curl -I --max-time 10 https://www.wikipedia.org` | Primero `timed out` (antes de restaurar) y después `HTTP/2 200` | [captura](<../evidencias/t5-mikrotik-25-recuperado-web-ok-20261117.png>) |
+
+**Resultado:** con la copia guardada en el NAS, el router ha vuelto a estar exactamente como antes del fallo, en pocos minutos y sin volver a configurar nada a mano.
+
+**Resumen de los comandos de copia:**
+
+| Para qué | Comando (en la Terminal del MikroTik) |
+|---|---|
+| Crear el backup | **Files → Backup** (o `/system backup save name=… password=…`) |
+| Crear el export | `/export file=r-mikrotik-20261117` |
+| ⬆️ **Subir** al NAS | `/tool fetch upload=yes mode=sftp address=192.168.27.10 user=mikrotik password=… src-path=FICHERO dst-path=/mnt/copias/mikrotik/FICHERO` |
+| ⬇️ **Bajar** del NAS | `/tool fetch mode=sftp address=192.168.27.10 user=mikrotik password=… src-path=/mnt/copias/mikrotik/FICHERO dst-path=FICHERO` |
+| 🔁 Restaurar | `/system backup load name=FICHERO password=…` |
 
 ## OPNsense
 
