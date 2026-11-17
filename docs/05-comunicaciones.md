@@ -24,7 +24,7 @@ Comprobación completa: [t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha2
 | Usuario(s) de administración | [x] | [ ] | [ ] |
 | Red WAN y LAN | [x] | [ ] | [ ] |
 | Acceso a Internet desde la LAN | [x] | [ ] | [ ] |
-| Conexión permitida y bloqueada + registro interpretado | [ ] | [ ] | [ ] |
+| Conexión permitida y bloqueada + registro interpretado | [x] | [ ] | [ ] |
 | Copia de la configuración en el servidor de copias | [ ] | [ ] | [ ] |
 | Fallo provocado y recuperación | [ ] | [ ] | [ ] |
 
@@ -122,6 +122,73 @@ Ha recibido la **.199** y no la .100: MikroTik reparte las direcciones del *pool
 Evidencias: [IP, rutas y DNS del cliente](<../evidencias/t5-mikrotik-09-cliente-dhcp-20261117.png>) · [web abierta](<../evidencias/t5-mikrotik-10-cliente-internet-20261117.png>) · [préstamos del DHCP](<../evidencias/t5-mikrotik-11-dhcp-leases-20261117.png>)
 
 ### Conexión permitida y bloqueada
+
+**Qué he hecho:** dos reglas en **IP → Firewall → Filter Rules**, las dos con registro (*log*). → [reglas](<../evidencias/t5-mikrotik-12-reglas-filtro-20261117.png>)
+
+| # | Qué hace | Chain | Condiciones | Action | Log prefix |
+|---|---|---|---|---|---|
+| 0 | **Permite** navegar por web desde la LAN | `forward` | Entra por `ether2`, TCP, puertos 80 y 443, solo conexiones nuevas | `accept` | `LAN-WEB-OK` |
+| 1 | **Bloquea** usar un DNS de fuera desde la LAN | `forward` | Entra por `ether2`, UDP, puerto 53 | `drop` | `LAN-DNS-BLOQ` |
+
+**Por qué estas dos:**
+- La web es el uso normal de un equipo de la empresa: se permite y queda apuntado.
+- El bloqueo obliga a que todos los equipos pregunten **al DNS de la empresa** (el router). Si cualquiera pudiera poner `8.8.8.8` a mano, se saltaría ese control.
+
+**Conceptos de las reglas:**
+- **Chain `forward`:** tráfico que **atraviesa** el router (de la LAN a Internet). El tráfico dirigido **al propio router** va por la chain `input`. Por eso la regla 1 **no rompe el DNS del router**: cuando el cliente pregunta a 192.168.27.1, el paquete va al router, no lo atraviesa.
+- **Solo conexiones nuevas (`connection-state=new`):** se apunta el primer paquete de cada conexión y no todos, para no llenar el registro.
+- **`drop` frente a `reject`:** `drop` tira el paquete sin contestar y el cliente espera hasta rendirse (*timed out*); `reject` le avisaría al momento de que está prohibido.
+- **El tráfico que no coincide con ninguna regla se permite:** en MikroTik, si ninguna regla lo para, pasa. Por ejemplo, Firefox usa a veces HTTP/3, que va por **UDP** 443: no lo apunta la regla 0 (que es TCP), pero pasa igual.
+- Las columnas **Bytes** y **Packets** cuentan lo que ha atrapado cada regla: 1 paquete en la 0 y 3 en la 1 (los tres intentos de `nslookup`).
+
+**Pruebas desde `cli-linux`:** → [captura](<../evidencias/t5-mikrotik-13-prueba-dns-bloqueado-20261117.png>)
+
+| Prueba | Antes de las reglas | Después de las reglas |
+|---|---|---|
+| `nslookup example.com 8.8.8.8` (DNS de fuera) | Responde con la IP | **`timed out`**: bloqueado |
+| `nslookup example.com` (DNS del router) | Responde | **Responde**: no le afecta |
+| Navegar con Firefox | Funciona | Funciona |
+
+`nslookup` muestra `Server: 127.0.0.53`: es un intermediario de DNS que Ubuntu lleva dentro del propio equipo (`systemd-resolved`). Las aplicaciones le preguntan a él y él pregunta al DNS que le dio el DHCP (192.168.27.1).
+
+**El registro (Log):** → [lista](<../evidencias/t5-mikrotik-14-log-firewall-20261117.png>) · [línea bloqueada](<../evidencias/t5-mikrotik-15-log-dns-bloqueado-20261117.png>) · [línea permitida](<../evidencias/t5-mikrotik-16-log-web-permitida-20261117.png>)
+
+Línea del bloqueo:
+
+```
+2026-11-17 07:35:50  firewall,info  LAN-DNS-BLOQ forward: in:ether2 out:ether1, connection-state:new
+src-mac 08:00:27:8B:D9:75, proto UDP, 192.168.27.199:36702->8.8.8.8:53, len 57
+```
+
+| Parte | Qué significa |
+|---|---|
+| `2026-11-17 07:35:50` | Cuándo pasó |
+| `firewall, info` | Lo ha escrito el cortafuegos, como información (no es un error del router) |
+| `LAN-DNS-BLOQ` | El prefijo que puse: dice **qué regla** lo ha apuntado (la del bloqueo) |
+| `forward` | El paquete intentaba **atravesar** el router |
+| `in:ether2 out:ether1` | Entraba por la LAN e iba a salir por la WAN |
+| `connection-state:new` | Era el primer paquete de una conexión nueva |
+| `src-mac 08:00:27:8B:D9:75` | La tarjeta de red que lo envió: la de `cli-linux` (la misma que en los préstamos del DHCP) |
+| `proto UDP` | Protocolo UDP, el que usa normalmente el DNS |
+| `192.168.27.199:36702` | **Quién**: el cliente, desde un puerto que elige él al azar |
+| `->8.8.8.8:53` | **A dónde**: el DNS de Google, puerto 53 (DNS) |
+| `len 57` | Tamaño del paquete: 57 bytes, una pregunta DNS pequeña |
+
+**En una frase:** a las 07:35:50, el equipo 192.168.27.199 (`cli-linux`) intentó preguntar al DNS 8.8.8.8 y el router lo tiró por la regla `LAN-DNS-BLOQ`.
+
+Línea de la permitida:
+
+```
+2026-11-17 07:37:12  firewall,info  LAN-WEB-OK forward: in:ether2 out:ether1, connection-state:new
+src-mac 08:00:27:8B:D9:75, proto TCP (SYN), 192.168.27.199:40300->185.125.190.99:80, len 60
+```
+
+Se lee igual. Lo nuevo: **`TCP (SYN)`** es el primer paso de una conexión TCP (el cliente «llama a la puerta»), y el destino es el **puerto 80** (web sin cifrar). La IP 185.125.190.99 es de Canonical (Ubuntu): seguramente es la comprobación automática de Ubuntu para saber si hay Internet, que se hace por web.
+
+**En una frase:** a las 07:37:12, `cli-linux` abrió una conexión web al puerto 80 de 185.125.190.99 y el router la dejó pasar por la regla `LAN-WEB-OK`.
+
+⚠️ El registro está en **memoria** (`memory`): se borra al reiniciar el router. Para guardarlo habría que enviarlo a un servidor de registros o a disco.
+
 ### Copia de la configuración
 ### Fallo y recuperación
 
