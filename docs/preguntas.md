@@ -49,4 +49,6 @@ Preguntas que me pueden hacer y las ideas clave de la respuesta. **Hay que saber
 | ¿Por qué la VM de Proxmox tiene «VT-x anidado»? | Proxmox es un hipervisor: necesita las instrucciones de virtualización del procesador dentro de la VM para arrancar sus propias VM |
 | ¿Por qué Windows 11 lleva TPM y Secure Boot? | Son requisitos de instalación de Windows 11; VirtualBox los emula (TPM 2.0 y claves de Microsoft en la UEFI) |
 | ¿Por qué Windows Server no está dentro del clúster Proxmox? | Lo pide el profesorado y tiene sentido: el clúster va con virtualización anidada, más lenta y frágil. Si un nodo falla, el dominio caería con él y nadie podría iniciar sesión. En una VM aparte no depende de eso |
-| ¿Por qué discos dinámicos? | Solo ocupan lo que se escribe: caben las 10 VM en el disco USB aunque la suma de tamaños máximos sea mayor |
+| ¿Por qué discos dinámicos? | Solo ocupan lo que se escribe: caben las 11 VM en el disco USB aunque la suma de tamaños máximos sea mayor |
+| ¿Por qué 3 nodos de Proxmox y no 2? | Por el quórum: con 3, si cae uno quedan 2 de 3 votos (mayoría) y el clúster sigue; con 2, si cae uno queda 1 de 2 (no es mayoría) y el que queda se bloquea para evitar el *split-brain*. Con 3 se puede probar la alta disponibilidad |
+| ¿Qué es el *split-brain*? | Cuando los nodos dejan de verse y cada uno cree que el otro ha muerto: si los dos siguieran trabajando, podrían arrancar la misma VM a la vez y estropear sus datos. El quórum lo evita |

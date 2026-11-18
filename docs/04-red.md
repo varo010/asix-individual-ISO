@@ -31,12 +31,14 @@ flowchart TB
     LAN --- NAS["nas-truenas<br/>.10"]
     LAN --- P1["pve1 · .11"]
     LAN --- P2["pve2 · .12"]
+    LAN --- P3["pve3 · .15"]
     LAN --- DC["srv-dc · .13"]
     LAN --- SL["srv-linux · .14"]
     LAN --- W["cli-win11<br/>DHCP .100–.199"]
     LAN --- U["cli-linux<br/>DHCP .100–.199"]
     P1 -.- G["CT y VM de prueba<br/>.20–.29"]
     P2 -.- G
+    P3 -.- G
 ```
 
 ## 2. Redes de VirtualBox
@@ -55,7 +57,7 @@ flowchart TB
 - Es un switch virtual que solo une a las VM que usan el nombre `lan-iso`. El anfitrión y la red real no la ven: la única salida es mi router, como en una empresa.
 - Puente o solo-anfitrión mezclarían mi LAN con la red física o con el anfitrión, y el router dejaría de ser el único camino.
 
-**Ajuste para Proxmox:** los adaptadores de `pve1` y `pve2` llevan el *modo promiscuo* en **Permitir todo**. Las VM y contenedores de dentro de Proxmox salen por la tarjeta del nodo, pero cada uno con su propia dirección MAC. Normalmente VirtualBox solo deja pasar el tráfico de la MAC de la VM; sin el modo promiscuo, el resto lo tira y no tendrían red.
+**Ajuste para Proxmox:** los adaptadores de `pve1`, `pve2` y `pve3` llevan el *modo promiscuo* en **Permitir todo**. Las VM y contenedores de dentro de Proxmox salen por la tarjeta del nodo, pero cada uno con su propia dirección MAC. Normalmente VirtualBox solo deja pasar el tráfico de la MAC de la VM; sin el modo promiscuo, el resto lo tira y no tendrían red.
 
 ## 3. Plan de direcciones
 
@@ -80,6 +82,7 @@ LAN: 192.168.27.0/24 · máscara 255.255.255.0 · difusión 192.168.27.255.
 | `nas-truenas` | Adaptador 1 | `lan-iso` | 192.168.27.10/24 | 192.168.27.1 | 192.168.27.1 | Fija |
 | `pve1` | Adaptador 1 (promiscuo) | `lan-iso` | 192.168.27.11/24 | 192.168.27.1 | 192.168.27.1 | Fija |
 | `pve2` | Adaptador 1 (promiscuo) | `lan-iso` | 192.168.27.12/24 | 192.168.27.1 | 192.168.27.1 | Fija |
+| `pve3` | Adaptador 1 (promiscuo) | `lan-iso` | 192.168.27.15/24 | 192.168.27.1 | 192.168.27.1 | Fija |
 | `srv-dc` | Adaptador 1 | `lan-iso` | 192.168.27.13/24 | 192.168.27.1 | 192.168.27.1 | Fija |
 | `srv-linux` | Adaptador 1 | `lan-iso` | 192.168.27.14/24 | 192.168.27.1 | 192.168.27.1 | Fija |
 | `cli-win11` | Adaptador 1 | `lan-iso` | 192.168.27.100–199/24 | 192.168.27.1 | 192.168.27.1 | DHCP |
