@@ -20,10 +20,10 @@ Comprobación completa: [t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha2
 
 | Tarea de la rúbrica | MikroTik | OPNsense | Debian + nftables |
 |---|---|---|---|
-| Instalar y comprobar versión y funcionamiento | [x] | [ ] | [ ] |
-| Usuario(s) de administración | [x] | [ ] | [ ] |
-| Red WAN y LAN | [x] | [ ] | [ ] |
-| Acceso a Internet desde la LAN | [x] | [ ] | [ ] |
+| Instalar y comprobar versión y funcionamiento | [x] | [x] | [ ] |
+| Usuario(s) de administración | [x] | [x] | [ ] |
+| Red WAN y LAN | [x] | [x] | [ ] |
+| Acceso a Internet desde la LAN | [x] | [x] | [ ] |
 | Conexión permitida y bloqueada + registro interpretado | [x] | [ ] | [ ] |
 | Copia de la configuración en el servidor de copias | [x] | [ ] | [ ] |
 | Fallo provocado y recuperación | [x] | [ ] | [ ] |
@@ -140,6 +140,16 @@ Evidencias: [IP, rutas y DNS del cliente](<../evidencias/t5-mikrotik-09-cliente-
 - **`drop` frente a `reject`:** `drop` tira el paquete sin contestar y el cliente espera hasta rendirse (*timed out*); `reject` le avisaría al momento de que está prohibido.
 - **El tráfico que no coincide con ninguna regla se permite:** en MikroTik, si ninguna regla lo para, pasa. Por ejemplo, Firefox usa a veces HTTP/3, que va por **UDP** 443: no lo apunta la regla 0 (que es TCP), pero pasa igual.
 - Las columnas **Bytes** y **Packets** cuentan lo que ha atrapado cada regla: 1 paquete en la 0 y 3 en la 1 (los tres intentos de `nslookup`).
+
+**Qué hace cada regla y qué pasa si falta o se rompe.** Para entenderlo hay que saber una cosa: en MikroTik, el tráfico que **no coincide con ninguna regla, pasa**. Las reglas solo cambian algo cuando lo paran o cuando lo apuntan.
+
+| Regla | Qué hace, en sencillo | Si no la creo o la borro | Si la hago mal |
+|---|---|---|---|
+| **NAT `masquerade`** (IP → Firewall → NAT) | Cambia la IP privada del cliente (192.168.27.x) por la del router al salir a Internet, y la deshace en la respuesta. Es el «conserje» | **La LAN se queda sin Internet.** Los paquetes salen, pero con una IP privada a la que nadie sabe contestar. Lo comprobé en el [fallo provocado](#fallo-y-recuperación): `curl` acaba en `Connection timed out` | Si pongo como salida `ether2` (la LAN) en vez de `ether1`, no cambia nada al salir a Internet y el resultado es el mismo: sin Internet |
+| **0 · `LAN-WEB-OK`** (accept, TCP 80 y 443) | Deja pasar la web y **apunta en el registro** cada conexión nueva | **La web sigue funcionando igual**, porque lo que no coincide con ninguna regla pasa. Lo único que se pierde es el **registro**: ya no queda apuntado quién navega ni a dónde. Esta regla sirve para **dejar constancia**, no para abrir paso | Si quito `connection-state=new`, apunta **todos** los paquetes de cada conexión y el registro se llena en segundos. Si me equivoco de puertos (por ejemplo solo el 80), las webs HTTPS (443) siguen funcionando pero **no quedan apuntadas** |
+| **1 · `LAN-DNS-BLOQ`** (drop, UDP 53) | Tira las preguntas DNS que intentan **atravesar** el router hacia un DNS de fuera (por ejemplo 8.8.8.8) | Cualquier equipo puede usar el DNS que quiera escribiéndolo a mano y **se salta el DNS de la empresa**: si el router filtrara webs por DNS, ese equipo lo esquivaría. Tampoco queda apuntado | Si la pongo en la chain **`input`** en vez de `forward`, bloquea las preguntas **al propio router**: los clientes se quedan **sin DNS**, no pueden traducir nombres y **no navega nada**, aunque Internet funcione |
+
+**El orden también cuenta:** MikroTik lee las reglas de arriba abajo y aplica la primera que coincide. Si delante de la `LAN-DNS-BLOQ` hubiera una regla que aceptara todo lo de la LAN, el bloqueo **nunca llegaría a actuar**.
 
 **Pruebas desde `cli-linux`:** → [captura](<../evidencias/t5-mikrotik-13-prueba-dns-bloqueado-20261117.png>)
 
@@ -308,11 +318,128 @@ Durante el reinicio (unos 20-30 segundos) WebFig pierde la conexión. Es normal.
 
 ## OPNsense
 
+**Qué es:** un sistema operativo hecho solo para ser **router y cortafuegos**, gratuito. Está construido sobre **FreeBSD** (otro sistema de la familia Unix, no es Linux) y se administra por una página web.
+
+**Mismo escenario que el MikroTik:** OPNsense ocupa el mismo sitio: la WAN en la NAT de VirtualBox y la LAN en `lan-iso` con la IP **192.168.27.1**. Así el NAS y los clientes siguen funcionando sin tocarlos. Antes de encenderlo **apagué el MikroTik** (`/system shutdown`): con los dos encendidos habría dos equipos con la misma IP y dos servidores DHCP en la misma red, y los clientes recibirían datos de uno u otro al azar.
+
 ### Instalación
+
+- **VM:** 2 vCPU, 2 GB de RAM, disco de 20 GB, arranque BIOS. Tarjeta 1 → NAT (WAN). Tarjeta 2 → `lan-iso` (LAN).
+- **Orden de arranque:** primero el disco y después el DVD. Con el disco vacío arranca del DVD; al terminar la instalación arranca solo del disco. Así evité el problema que tuve con TrueNAS (volvía a salir el instalador).
+- La ISO arranca en **modo live** (funciona sin instalar). El instalador se lanza entrando con el usuario `installer` y la contraseña `opnsense`, que son los que trae OPNsense de serie.
+- Opciones: teclado español, **UFS** en vez de ZFS (UFS es más ligero y va mejor con 2 GB de RAM y un solo disco), disco de 20 GB y contraseña de `root`.
+- Durante *Preparing target system* pareció quedarse parado unos minutos. Comprobé desde fuera que el disco ya tenía el sistema copiado (unos 2,4 GB) y esperé; terminó solo.
+
+**Primer arranque:** → [consola](<../evidencias/t5-opnsense-01-consola-inicial-20261117.png>)
+
+OPNsense había puesto las tarjetas **al revés** (`LAN (em0)`, `WAN (em1)`) y la LAN en 192.168.1.1, que es lo que trae de serie: la primera tarjeta como LAN. Lo arreglé en el menú de la consola (ver *Red WAN y LAN*).
+
+**Actualización** (**System → Firmware → Status → Check for updates**):
+
+| | Antes | Después |
+|---|---|---|
+| Versión | 26.7 | **26.7.9_3** |
+| Actualizaciones | 96 paquetes, 298,8 MiB, pide reinicio | *There are no updates available* |
+
+- 26.7 → 26.7.9 son **9 rondas de correcciones** de la misma versión, no una versión nueva. Incluía arreglos de seguridad en `openssl` (cifrado), `openssh` (SSH), `curl` y las VPN.
+- La hice **antes de configurar nada**: si algo salía mal, se perdía muy poco. En un router en uso se haría fuera de horario, porque durante el reinicio la LAN se queda sin Internet.
+
+→ [lista de actualizaciones](<../evidencias/t5-opnsense-05-actualizaciones-lista-20261117.png>) · [resumen](<../evidencias/t5-opnsense-06-actualizaciones-resumen-20261117.png>) · [sin actualizaciones](<../evidencias/t5-opnsense-07-sin-actualizaciones-20261117.png>) · [versión](<../evidencias/t5-opnsense-08-version-actualizada-20261117.png>)
+
+**Asistente inicial** (**System → Configuration → Wizard**): → [terminado](<../evidencias/t5-opnsense-09-asistente-terminado-20261117.png>)
+
+| Pantalla | Lo que puse | Por qué |
+|---|---|---|
+| General | Nombre `r-opnsense`, dominio `local`, zona horaria **Europe/Madrid** | Con la hora en UTC (la de serie), las horas del registro irían una hora por detrás del reloj |
+| | *Override DNS* ✅, *Enable Resolver* ✅, DNSSEC no | Usar el DNS que recibe la WAN y que el router conteste las preguntas DNS de la LAN |
+| WAN | DHCP. **Block RFC1918 Private Networks: desmarcado** | Esa casilla bloquea lo que llega a la WAN desde redes privadas. Nuestra WAN **está** en una red privada (la NAT de VirtualBox, 10.0.2.x), igual que un router detrás del router de casa |
+| | *Block bogon networks* ✅ | Las direcciones *bogon* no son de nadie en Internet: si llega algo desde ellas, es falso |
+| LAN | 192.168.27.1/24, DHCP ✅ | |
+| Tipo de instalación | *Multiwan* ✗, *DHCP/DNS registration* ✅, *IPsec* ✗ | Solo hay una WAN y no hay VPN. El registro DHCP/DNS hace que los equipos se puedan encontrar por su nombre |
+| Contraseña | La de `root` | |
+
 ### Usuario de administración
+
+**System → Access → Users → +**: usuario **`alvaro`**, grupo **`admins`** (*unrestricted*, puede hacer todo). Cerré la sesión de `root` y entré con `alvaro`: arriba sale `alvaro@r-opnsense.local` y se ven todos los menús. → [usuarios](<../evidencias/t5-opnsense-15-usuarios-20261117.png>) · [sesión](<../evidencias/t5-opnsense-16-sesion-alvaro-20261117.png>)
+
+**Diferencia con el MikroTik:** allí desactivé `admin`; aquí **dejo `root` activo como cuenta de emergencia**. `root` es quien entra en el **menú de la consola** (reasignar tarjetas, cambiar la IP de la LAN, restaurar una copia…). Si un día la web no funciona, la consola es la única forma de arreglar el router. Reparto: `alvaro` para el día a día por la web, `root` solo para emergencias, con una contraseña fuerte guardada aparte.
+
 ### Red WAN y LAN
+
+Desde el menú de la consola, entrando con `root`:
+
+- **Opción 1 (*Assign interfaces*):** LAGG no, VLAN no, **WAN = `em0`** (tarjeta 1, NAT), **LAN = `em1`** (tarjeta 2, `lan-iso`). `em0` y `em1` son los nombres que da FreeBSD a las tarjetas, en el mismo orden que en VirtualBox.
+- **Opción 2 (*Set interface IP address*), LAN:** sin DHCP, IP 192.168.27.1/24, sin puerta de enlace, sin IPv6, servidor DHCP de .100 a .199, mantener la web en HTTPS.
+
+→ [interfaces asignadas](<../evidencias/t5-opnsense-02-interfaces-asignadas-20261117.png>)
+
+| Interfaz | Tarjeta | IP | Cómo |
+|---|---|---|---|
+| WAN | `em0` (NAT) | 10.0.2.15/24 (y una IPv6 privada `fd17:…`) | DHCP de la NAT de VirtualBox |
+| LAN | `em1` (`lan-iso`) | 192.168.27.1/24 | Fija |
+
+**DHCP** (**Services → Dnsmasq DNS & DHCP → DHCP ranges**). En esta versión el DHCP lo da **Dnsmasq**, un programa pequeño que hace DHCP y DNS.
+- **Problema:** el asistente **había cambiado el rango** que puse en la consola: lo dejó en **.41 – .245**. → [captura](<../evidencias/t5-opnsense-13-dhcp-rango-asistente-20261117.png>)
+- La .10 del NAS quedaba fuera, pero lo devolví a **.100 – .199** para tener el mismo escenario que con el MikroTik y dejar las IP bajas para equipos con IP fija. → [corregido](<../evidencias/t5-opnsense-14-dhcp-rango-corregido-20261117.png>)
+- **Lección:** revisar siempre lo que deja hecho un asistente automático.
+
+**Cliente:** `cli-linux` volvió a pedir IP (`sudo nmcli device disconnect enp0s3` y `connect`) y recibió la **.199** con `valid_lft 86381sec`: **24 horas** de préstamo, lo que trae OPNsense de serie (el MikroTik daba 30 min). Por eso se sabe que la IP la ha dado OPNsense y no el MikroTik. → [captura](<../evidencias/t5-opnsense-03-cliente-dhcp-20261117.png>)
+
 ### Salida a Internet
+
+**Diferencia con el MikroTik:** OPNsense **trae hecho de serie** el NAT de salida (*Outbound NAT* automático: hace el *masquerade* solo) y una regla que deja salir todo desde la LAN. En el MikroTik los tuve que crear a mano. → [dashboard](<../evidencias/t5-opnsense-04-dashboard-20261117.png>)
+
+**Problema con el DNS:** la web no cargaba. → [captura](<../evidencias/t5-opnsense-10-problema-dns-20261117.png>)
+
+```
+curl -I --max-time 10 https://www.wikipedia.org
+curl: (28) Resolving timed out after 10000 milliseconds
+```
+
+- **Pista:** dice ***Resolving*** timed out, no *Connection* timed out. Falla la **traducción del nombre** (DNS), no la conexión.
+- **Causa:** el DNS de OPNsense (**Unbound**) viene como **resolvedor**: no pregunta a otro DNS, va él mismo a los servidores raíz de Internet y baja paso a paso. La red del aula no lo deja salir así, igual que bloquea el ping. El MikroTik funcionaba porque **reenviaba** las preguntas al DNS de la NAT de VirtualBox (10.0.2.3).
+- **Solución:** **Services → Unbound DNS → Query Forwarding → Use System Nameservers** ✅. Ahora Unbound reenvía a 10.0.2.3, como el MikroTik. → [captura](<../evidencias/t5-opnsense-11-dns-reenvio-20261117.png>)
+- La fila `local → 127.0.0.1:53053` la pone OPNsense solo: las preguntas por nombres de la LAN (`*.local`) se las pasa a Dnsmasq, que conoce los nombres porque es quien reparte las IP.
+
+**Comprobación:** → [captura](<../evidencias/t5-opnsense-12-cliente-dns-web-ok-20261117.png>)
+
+| Prueba | Resultado |
+|---|---|
+| `resolvectl status enp0s3` | DNS: 192.168.27.1 (el router) |
+| `resolvectl query www.wikipedia.org` | 185.15.58.224 en 24,3 ms |
+| `curl -I --max-time 10 https://www.wikipedia.org` | `HTTP/2 200` |
+
 ### Conexión permitida y bloqueada
+
+Las mismas dos reglas que en el MikroTik, para poder comparar.
+
+**Alias `puertos_web`** (**Firewall → Aliases**): tipo *Port(s)*, contenido **80 y 443**. Un **alias** es un nombre que agrupa varios puertos o direcciones: así hago **una** regla para los dos puertos en vez de dos reglas. → [captura](<../evidencias/t5-opnsense-17-alias-puertos-web-20261118.png>)
+
+**Reglas** (**Firewall → Rules → LAN**): → [captura 1](<../evidencias/t5-opnsense-18-reglas-lan-a-20261118.png>) · [captura 2](<../evidencias/t5-opnsense-19-reglas-lan-b-20261118.png>)
+
+| Descripción | Acción | Protocolo | Origen | Destino | Puerto | Log |
+|---|---|---|---|---|---|---|
+| `LAN-WEB-OK` | **Pass** (dejar pasar) | TCP | LAN network | cualquiera | `puertos_web` | ✅ |
+| `LAN-DNS-BLOQ` | **Block** (tirar) | UDP | LAN network | **! This Firewall** | DOMAIN (53) | ✅ |
+
+**Conceptos del formulario:**
+- **Quick ✅:** «si coincide, decide ya y no sigas mirando». Hace que **gane la primera regla que coincide**, como en el MikroTik.
+- **Block = `drop`** del MikroTik: tira el paquete sin avisar. *Reject* avisaría al cliente.
+- **Keep state:** el cortafuegos **recuerda la conexión**; si dejó salir la petición, deja volver la respuesta sin otra regla.
+- **`! This Firewall`** (*Invert Destination* + *This Firewall*): «a cualquier sitio **menos al router**». En el MikroTik la regla iba en `forward` (solo el tráfico que atraviesa el router); en OPNsense las reglas de la LAN miran **todo** lo que entra por la LAN, también lo que va al propio router. Sin el `!`, la regla bloquearía también el DNS del router.
+- **DOMAIN (53):** es el puerto 53. OPNsense usa los nombres oficiales de los puertos, y el 53 se llama *domain* (de *Domain Name System*).
+- **Description:** es lo que aparece en el registro para saber qué regla actuó, como el *log prefix* del MikroTik.
+
+**Qué hace cada regla y qué pasa si falta o se rompe.** Al final de las reglas de la LAN, OPNsense trae de serie **«Default allow LAN to any»**, que deja pasar todo lo que sale de la LAN. Por eso pasa lo mismo que en el MikroTik: lo que no coincide con mis reglas, pasa.
+
+| Regla | Qué hace, en sencillo | Si no la creo o la borro | Si la hago mal |
+|---|---|---|---|
+| **NAT de salida automático** (de serie) | El *masquerade*: cambia la IP privada del cliente por la de la WAN | La LAN se queda **sin Internet**, igual que al borrar el `masquerade` del MikroTik. Pasaría si cambio *Firewall → NAT → Outbound* a modo manual sin crear reglas | — |
+| **Default allow LAN to any** (de serie) | Deja salir todo desde la LAN | Si la quito, **solo pasa lo que permitan mis reglas**. `LAN-WEB-OK` deja pasar la web, pero **nada permite el DNS al router**: los clientes no podrían traducir nombres y **tampoco navegarían**. Habría que añadir otra regla que permita UDP 53 hacia el router. Es la forma más segura de trabajar (*todo prohibido salvo lo permitido*), pero obliga a pensar todo lo que hace falta | — |
+| **`LAN-WEB-OK`** (Pass, TCP 80/443) | Deja pasar la web y **la apunta en el registro** | Con la regla de serie activa, **la web sigue funcionando**: solo se pierde el registro. Sin la regla de serie, sería **imprescindible**: sin ella no cargaría ninguna web | Si el alias solo tuviera el 80, las webs HTTPS no quedarían apuntadas (y sin la regla de serie, **no cargarían**) |
+| **`LAN-DNS-BLOQ`** (Block, UDP 53 a `! This Firewall`) | Tira las preguntas DNS que van a un DNS de fuera | Cualquier equipo puede saltarse el DNS de la empresa poniendo 8.8.8.8 a mano, y no queda apuntado | **Sin el `!` (Invert):** bloquea también el DNS **del router**, los clientes no traducen nombres y **no navega nada** (`Resolving timed out`). **Si queda por debajo de la regla de serie:** nunca actúa, porque la de serie deja pasar el DNS antes |
+| **Alias `puertos_web`** | Junta 80 y 443 bajo un nombre | Habría que hacer una regla por puerto. OPNsense **no deja borrar** un alias que está usando una regla | Si quito un puerto del alias, la regla deja de cubrirlo |
+
 ### Copia de la configuración
 ### Fallo y recuperación
 
