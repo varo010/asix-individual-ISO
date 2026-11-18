@@ -20,8 +20,8 @@ Estados: Pendiente · En curso · Hecho · Simulado.
 | T0 · Entorno de pruebas | Montar mi entorno y justificar sus límites. Ampliación: documentarlo en Git | [00-entorno](docs/00-entorno.md) | FDM RA1 | Hecho: diseñado, 10 VM creadas con sus ISO comprobadas, repo en GitHub. En casa falta cerrar [INC-01](incidencias/INC-01-virtualbox-secure-boot-casa.md) |
 | T2 · Equipos | Inventario y comparativa del equipo de clase y el de casa; cuellos de botella. Ampliación: tests de memoria, disco y red | [02-equipos](docs/02-equipos.md) | FDM RA1 | Hecho, con ampliación (tests en los dos equipos) |
 | T4 · Red | Esquema de red y montaje en VirtualBox. Ampliación: implementarlo y verificarlo | [04-red](docs/04-red.md) | ISO RA1 | Obligatorio hecho (diseño y VM creadas con su red); ampliación al instalar el router |
-| T5 · Comunicaciones | MikroTik, OPNsense y Debian con nftables | [05-comunicaciones](docs/05-comunicaciones.md) | ISO RA1, RA3, RA6 | En curso: MikroTik terminado (red, DHCP, DNS, NAT, cortafuegos con registro, copia en el NAS y recuperación). Faltan OPNsense y Debian |
-| T5 · Datos | TrueNAS como servidor de copias | [05-truenas](docs/05-truenas.md) | ISO RA1, RA3 | Hecho: instalado, IP fija, pool `copias` y copias del MikroTik por SFTP |
+| T5 · Comunicaciones | MikroTik, OPNsense y Debian con nftables | [05-comunicaciones](docs/05-comunicaciones.md) | ISO RA1, RA3, RA6 | En curso: MikroTik y OPNsense terminados (red, DHCP, DNS, NAT, cortafuegos con registro, copia en el NAS y recuperación). Falta Debian con nftables |
+| T5 · Datos | TrueNAS como servidor de copias | [05-truenas](docs/05-truenas.md) | ISO RA1, RA3 | Hecho: instalado, IP fija, pool `copias` y copias del MikroTik y OPNsense por SFTP |
 | T5 · Virtualización | Clúster Proxmox y migración medida | [05-proxmox](docs/05-proxmox.md) | ISO RA1, RA6 | Pendiente |
 | T5 · Servidores | Windows Server 2025 y servidor GNU/Linux | [05-servidores](docs/05-servidores.md) | ISO RA1, RA3 | Pendiente |
 | T5 · Clientes | Windows 11 y GNU/Linux | [05-clientes](docs/05-clientes.md) | ISO RA1, RA3 | Pendiente |
