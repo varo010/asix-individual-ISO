@@ -133,7 +133,7 @@ Luego borré `prueba.txt`.
 | Equipo crítico | Qué se copia | Cómo llega al NAS | Dónde | Por qué |
 |---|---|---|---|---|
 | Router MikroTik | Backup completo y cifrado (`.backup`) y configuración en texto (`.rsc`) | Lo sube el propio router por SFTP con `/tool fetch` (detalle en [T5 comunicaciones](05-comunicaciones.md#copia-de-la-configuración)) | `copias/mikrotik` | Sin router no hay Internet ni DHCP en la LAN: es lo primero que hay que poder recuperar |
-| Router OPNsense | Pendiente | | | |
+| Router OPNsense | Configuración completa en XML **cifrado** | Se descarga con el navegador en `cli-linux` y se sube por SFTP con el usuario `opnsense` ([detalle](05-comunicaciones.md#copia-de-la-configuración-1)) | `copias/opnsense` | Igual que el MikroTik: es la salida a Internet de toda la LAN |
 | Router Debian + nftables | Pendiente | | | |
 | Windows Server | Pendiente | | | |
 

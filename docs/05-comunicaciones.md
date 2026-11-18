@@ -25,8 +25,8 @@ Comprobación completa: [t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha2
 | Red WAN y LAN | [x] | [x] | [ ] |
 | Acceso a Internet desde la LAN | [x] | [x] | [ ] |
 | Conexión permitida y bloqueada + registro interpretado | [x] | [x] | [ ] |
-| Copia de la configuración en el servidor de copias | [x] | [ ] | [ ] |
-| Fallo provocado y recuperación | [x] | [ ] | [ ] |
+| Copia de la configuración en el servidor de copias | [x] | [x] | [ ] |
+| Fallo provocado y recuperación | [x] | [x] | [ ] |
 
 ## MikroTik (CHR)
 
@@ -488,7 +488,120 @@ Cómo se lee:
 **En una frase:** a las 10:24 (hora de España), `cli-linux` intentó tres veces preguntar al DNS 8.8.8.8 y el router lo tiró las tres veces por la regla `LAN-DNS-BLOQ`; a las 10:25 abrió una web de Wikipedia y el router la dejó pasar y la apuntó con `LAN-WEB-OK`.
 
 ### Copia de la configuración
+
+**Qué permite OPNsense** (**System → Configuration → Backups**): → [descarga](<../evidencias/t5-opnsense-27-backups-descarga-20261118.png>) · [restaurar](<../evidencias/t5-opnsense-28-backups-restaurar-20261118.png>)
+
+| Opción | Qué hace |
+|---|---|
+| **Backup Count** | Cuántas versiones antiguas de la configuración guarda el router **dentro de sí mismo**. No es una copia de seguridad: si el router muere, se pierden con él |
+| **Download configuration** | Descarga toda la configuración en un fichero **XML** (texto con etiquetas, como el HTML) |
+| **Do not backup RRD data** ✅ | Deja fuera los datos de las **gráficas** (tráfico, CPU…): no son configuración y harían el fichero mucho más grande |
+| **Encrypt this configuration file** ✅ | Cifra la copia con una contraseña. Hay que marcarla: el fichero lleva las contraseñas de los usuarios y las claves de los certificados |
+
+**Diferencia con el MikroTik:** esta versión **solo deja descargar** la copia al navegador; no tiene un comando para enviarla a otro servidor como `/tool fetch`. Existen complementos (*plugins*) para mandarla a la nube, pero no a un servidor SFTP propio. Por eso el camino es:
+
+**OPNsense → (descargar con el navegador) → `cli-linux` → (SFTP) → TrueNAS**
+
+Es lo que haría un administrador desde su equipo. La desventaja es que la copia **la tiene que hacer una persona**; el MikroTik la sube solo.
+
+**En el NAS:** dataset **`copias/opnsense`** y usuario **`opnsense`** (solo SSH, con su carpeta `/mnt/copias/opnsense`), igual que para el MikroTik: un usuario y una carpeta por equipo. → [usuario](<../evidencias/t5-truenas-14-usuario-opnsense-20261118.png>) · [dataset](<../evidencias/t5-truenas-15-dataset-opnsense-20261118.png>)
+
+**Pasos:**
+1. En OPNsense: marcar *Encrypt*, poner contraseña y **Download configuration**. Se guarda en `cli-linux` como `config-r-opnsense.local-20261118093237.xml` (nombre del router, fecha y hora).
+2. Subirla al NAS desde la terminal de `cli-linux`:
+
+> **⬆️ Subir la copia de OPNsense al NAS** (desde `cli-linux`)
+>
+> ```
+> cd ~/Downloads
+> sftp opnsense@192.168.27.10
+> sftp> put config-r-opnsense.local-20261118093237.xml
+> sftp> ls -l
+> sftp> bye
+> ```
+
+Resultado: `100 %, 59 KB` y en el NAS `-rw-r--r-- opnsense opnsense 60067 … config-r-opnsense.local-20261118093237.xml`. → [captura](<../evidencias/t5-opnsense-29-copia-subida-nas-20261118.png>)
+
+La huella SSH del NAS que pidió confirmar (`SHA256:js+p3aiajK0n…`) es **la misma** que la del día anterior: es el mismo NAS. La volvió a preguntar porque `cli-linux` es un sistema live y se olvida de todo al reiniciar.
+
+**Comprobar que va cifrada:** `head -c 200 config-r-opnsense*.xml` → [captura](<../evidencias/t5-opnsense-30-copia-cifrada-20261118.png>)
+
+```
+---- BEGIN config.xml ----
+Version: OPNsense 26.7.9_3
+Cipher: AES-256-CBC
+PBKDF2: 100000
+Hash: SHA512
+
+U2FsdGVkX19xIAH3FNzH4AKCu67ee+RoSTF/zn1XoK+…
+```
+
+| Línea | Qué significa |
+|---|---|
+| `---- BEGIN config.xml ----` | La marca de OPNsense de que va cifrado |
+| `Version` | La versión de la que se sacó. Para restaurar, mejor la misma |
+| `Cipher: AES-256-CBC` | El **algoritmo de cifrado**: AES con clave de 256 bits |
+| `PBKDF2: 100000` | La contraseña se pasa **100 000 veces** por una función antes de usarla. Para mí es un instante; a quien intente adivinarla probando millones de contraseñas le hace ir 100 000 veces más lento |
+| `Hash: SHA512` | La función de esas vueltas (familia del SHA256 de las ISO) |
+| `U2FsdGVkX19…` | La configuración ya cifrada: sin la contraseña no se puede leer |
+
 ### Fallo y recuperación
+
+**Qué simulo:** el mismo desastre doble que en el MikroTik: se rompe la salida a Internet, se borran las reglas **y** se pierde la copia del equipo del administrador. La recuperación tiene que salir del NAS.
+
+**1. Antes del fallo** (08:44:46 UTC): `curl -I https://www.wikipedia.org` → `HTTP/2 200`. → [captura](<../evidencias/t5-opnsense-31-antes-fallo-web-ok-20261118.png>)
+
+**2. Provoco el fallo:**
+- **Firewall → NAT → Source NAT** → modo **Disable Source NAT rule generation** → *Apply*. Es como borrar el `masquerade` del MikroTik. → [captura](<../evidencias/t5-opnsense-32-fallo-nat-desactivado-20261118.png>)
+  - En esta versión, lo que antes se llamaba *Outbound NAT* se llama **Source NAT** (NAT de **origen**: cambia la IP de origen al salir, como la chain `srcnat` del MikroTik). **Destination NAT** es lo contrario: cambia el destino al entrar; sirve para abrir puertos.
+- **Firewall → Rules**: borro `LAN-WEB-OK` y `LAN-DNS-BLOQ` → *Apply*. Quedan solo las *Default allow*. → [captura](<../evidencias/t5-opnsense-33-fallo-reglas-borradas-20261118.png>)
+- En `cli-linux`: `rm config-r-opnsense…xml` y `ls` vacío.
+
+**3. Compruebo que está roto** (08:49:20 UTC): → [captura](<../evidencias/t5-opnsense-34-fallo-sin-copia-sin-web-20261118.png>)
+
+```
+curl: (28) Connection timed out after 10003 milliseconds
+```
+
+Esta vez es ***Connection*** timed out y no *Resolving*: el DNS funciona (lo pregunta el propio router, que no necesita NAT), pero la conexión del cliente sale con IP privada y no vuelve.
+
+**4. Recupero desde el NAS** (inicio: **09:06:00 UTC**):
+
+> **⬇️ Bajar la copia de OPNsense del NAS** (desde `cli-linux`)
+>
+> ```
+> cd ~/Downloads
+> sftp opnsense@192.168.27.10
+> sftp> get config-r-opnsense.local-20261118093237.xml
+> sftp> bye
+> ```
+>
+> `get` es lo contrario de `put`: **trae** el fichero del servidor a mi equipo.
+
+→ [captura](<../evidencias/t5-opnsense-36-copia-bajada-del-nas-20261118.png>)
+
+> **🔁 Restaurar en OPNsense**
+>
+> **System → Configuration → Backups → Restore**: *Restore areas* **All**, **Browse…** → el fichero, marcar **Configuration file is encrypted** y poner la contraseña de la copia, dejar **Reboot after a successful restore** → **Restore configuration**.
+
+Mensaje: *The configuration has been restored. The system is rebooting now.* → [captura](<../evidencias/t5-opnsense-35-restaurado-20261118.png>)
+
+**5. Compruebo la recuperación:**
+
+| Prueba | Resultado | Evidencia |
+|---|---|---|
+| **Source NAT** | Vuelve a **Automatic Source NAT rule generation** | [captura](<../evidencias/t5-opnsense-38-recuperado-nat-20261118.png>) |
+| **Rules (LAN)** | `LAN-WEB-OK` y `LAN-DNS-BLOQ` han vuelto, **en su sitio** (por encima de las *Default allow*) | [captura](<../evidencias/t5-opnsense-37-recuperado-reglas-20261118.png>) |
+| Firefox → Google «hora exacta» | Carga: **10:11:30 CET** (09:11:30 UTC) | [captura](<../evidencias/t5-opnsense-39-recuperado-internet-20261118.png>) |
+
+**Tiempo de recuperación: unos 5 minutos y medio** (de 09:06:00 a 09:11:30 UTC), contando la descarga del NAS, la restauración, el reinicio del router y un error mío (ver abajo).
+
+**Problemas que tuve durante la recuperación:**
+- **`cli-linux` iba muy lento** (Firefox *Not Responding*, el medidor de CPU de VirtualBox en rojo): sus 2 procesadores estaban al 100 %. El portátil estaba bien (18 núcleos y 14 GB libres). Le subí la VM de 3 a **4 GB de RAM** y de 2 a **4 procesadores**. Al ser un sistema live, guarda todo en la RAM, y las webs de OPNsense y TrueNAS pesan mucho por sus gráficas en directo.
+- **No arrancaba** (*No bootable option or device was found*): al apagarse, Ubuntu live **expulsa el DVD**, y el disco de `cli-linux` está vacío porque todavía no está instalado. Volví a meter la ISO en el lector virtual. Mientras no esté instalado, hay que hacerlo cada vez que se apague.
+- **Error al restaurar** (*The uploaded file could not be decrypted*): en *Browse* había elegido **otro fichero** (el acceso directo del instalador de Ubuntu del escritorio), no la copia. OPNsense intentó descifrarlo y no pudo. Con el fichero correcto funcionó a la primera.
+
+**Resultado:** con la copia del NAS, el router ha vuelto exactamente como estaba: NAT automático y las dos reglas **en el mismo orden**, que es justo lo que costó dejar bien.
 
 ## GNU/Linux (Debian) con nftables
 
@@ -505,15 +618,15 @@ Cómo se lee:
 | Criterio | MikroTik | OPNsense | Debian + nftables |
 |---|---|---|---|
 | Recursos que consume (medidos) | | | |
-| Cómo se administra | | | |
-| Cómo se hace la copia | | | |
-| Tiempo de recuperación medido | | | |
+| Cómo se administra | Web (WebFig) y terminal | Web; consola solo para lo básico (tarjetas e IP) | |
+| Cómo se hace la copia | Backup cifrado + export; **el router la sube solo** al NAS por SFTP (`/tool fetch`) | XML cifrado; **se descarga con el navegador** y se sube al NAS desde otro equipo | |
+| Tiempo de recuperación medido | Unos minutos (no lo cronometré) | Unos 5 min 30 s, contando un error mío | |
 
 ## Comparación con el grupo
 
 | Aspecto | Grupo 3 | Mi entorno |
 |---|---|---|
 | MikroTik | hEX físico (RB750Gr3), RouterOS 7.20.8 | CHR 7.24.6 en VM, administrado por WebFig |
-| OPNsense | VM en VirtualBox del PC-01 | VM en mi VirtualBox |
+| OPNsense | VM en VirtualBox del PC-01 | VM en mi VirtualBox, OPNsense 26.7.9 |
 | Debian + nftables | VM en VirtualBox del PC-01 | VM en mi VirtualBox |
 | WAN de los routers virtuales | Adaptador puente a la red del aula | NAT |
