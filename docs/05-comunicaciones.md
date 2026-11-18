@@ -24,7 +24,7 @@ Comprobación completa: [t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha2
 | Usuario(s) de administración | [x] | [x] | [ ] |
 | Red WAN y LAN | [x] | [x] | [ ] |
 | Acceso a Internet desde la LAN | [x] | [x] | [ ] |
-| Conexión permitida y bloqueada + registro interpretado | [x] | [ ] | [ ] |
+| Conexión permitida y bloqueada + registro interpretado | [x] | [x] | [ ] |
 | Copia de la configuración en el servidor de copias | [x] | [ ] | [ ] |
 | Fallo provocado y recuperación | [x] | [ ] | [ ] |
 
@@ -430,7 +430,7 @@ Las mismas dos reglas que en el MikroTik, para poder comparar.
 - **DOMAIN (53):** es el puerto 53. OPNsense usa los nombres oficiales de los puertos, y el 53 se llama *domain* (de *Domain Name System*).
 - **Description:** es lo que aparece en el registro para saber qué regla actuó, como el *log prefix* del MikroTik.
 
-**Qué hace cada regla y qué pasa si falta o se rompe.** Al final de las reglas de la LAN, OPNsense trae de serie **«Default allow LAN to any»**, que deja pasar todo lo que sale de la LAN. Por eso pasa lo mismo que en el MikroTik: lo que no coincide con mis reglas, pasa.
+**Qué hace cada regla y qué pasa si falta o se rompe.** OPNsense trae de serie en la LAN la regla **«Default allow LAN to any»**, que deja pasar todo lo que sale de la LAN. Por eso pasa lo mismo que en el MikroTik: lo que no coincide con mis reglas, pasa.
 
 | Regla | Qué hace, en sencillo | Si no la creo o la borro | Si la hago mal |
 |---|---|---|---|
@@ -439,6 +439,53 @@ Las mismas dos reglas que en el MikroTik, para poder comparar.
 | **`LAN-WEB-OK`** (Pass, TCP 80/443) | Deja pasar la web y **la apunta en el registro** | Con la regla de serie activa, **la web sigue funcionando**: solo se pierde el registro. Sin la regla de serie, sería **imprescindible**: sin ella no cargaría ninguna web | Si el alias solo tuviera el 80, las webs HTTPS no quedarían apuntadas (y sin la regla de serie, **no cargarían**) |
 | **`LAN-DNS-BLOQ`** (Block, UDP 53 a `! This Firewall`) | Tira las preguntas DNS que van a un DNS de fuera | Cualquier equipo puede saltarse el DNS de la empresa poniendo 8.8.8.8 a mano, y no queda apuntado | **Sin el `!` (Invert):** bloquea también el DNS **del router**, los clientes no traducen nombres y **no navega nada** (`Resolving timed out`). **Si queda por debajo de la regla de serie:** nunca actúa, porque la de serie deja pasar el DNS antes |
 | **Alias `puertos_web`** | Junta 80 y 443 bajo un nombre | Habría que hacer una regla por puerto. OPNsense **no deja borrar** un alias que está usando una regla | Si quito un puerto del alias, la regla deja de cubrirlo |
+
+**Problema: la regla de bloqueo no bloqueaba.** Después de crear las reglas, `nslookup example.com 8.8.8.8` seguía contestando. Cómo lo encontré:
+
+1. **Comprobé que estaban aplicadas** (botón *Apply*): lo estaban, y seguía sin bloquear.
+2. **Miré el registro** (**Firewall → Log Files → Live View**, buscando `8.8.8.8`): solo salían líneas de la **WAN** con la regla *let out anything from firewall host itself* (el paquete ya pasado por el NAT, con origen 10.0.2.15). **No había ninguna línea de la LAN.** Si `LAN-DNS-BLOQ` hubiera actuado, saldría en rojo, porque tiene el registro activado. Conclusión: otra regla **sin registro** dejaba pasar el paquete antes. → [captura](<../evidencias/t5-opnsense-20-liveview-solo-wan-20261118.png>)
+3. **Miré la tabla de estados** (**Firewall → Diagnostics → States**): es la lista de conexiones abiertas, como *Connections* en el MikroTik. La columna **Rule** dice qué regla aceptó cada conexión: todas las de la LAN ponían **«Default allow…»**. → [captura](<../evidencias/t5-opnsense-22-estados-default-allow-20261118.png>)
+4. **Volví a la lista de reglas** viéndola entera: las dos reglas de serie *Default allow LAN to any* (IPv4 e IPv6) estaban **por encima** de las mías. → [captura](<../evidencias/t5-opnsense-21-reglas-orden-mal-20261118.png>)
+
+**Causa:** se gana con la primera regla que coincide (*Quick*). El DNS a 8.8.8.8 ya coincidía con *Default allow* (deja pasar todo) y nunca llegaba a `LAN-DNS-BLOQ`.
+
+**Solución:** marqué mis dos reglas y, en la fila de *Default allow LAN to any rule*, pulsé la flecha **←** (*mover las seleccionadas delante de esta*). Después, **Apply**. → [orden correcto](<../evidencias/t5-opnsense-23-reglas-orden-bien-20261118.png>)
+
+| Orden | Regla | Registro |
+|---|---|---|
+| 1 | `LAN-WEB-OK` | ✅ |
+| 2 | `LAN-DNS-BLOQ` | ✅ |
+| 3 | Default allow LAN to any (IPv4) | ✗ (campana tachada) |
+| 4 | Default allow LAN IPv6 to any | ✗ |
+
+**Lección:** una regla bien hecha **en el sitio equivocado no hace nada**. Y el registro sirve para diagnosticar: que una regla con log **no deje ninguna línea** ya es una pista.
+
+**Pruebas desde `cli-linux`** (ya con el orden correcto): → [captura](<../evidencias/t5-opnsense-24-prueba-dns-bloqueado-20261118.png>)
+
+| Prueba | Resultado | Qué significa |
+|---|---|---|
+| `nslookup example.com 8.8.8.8` | `communications error … timed out` tres veces y `no servers could be reached` | **Bloqueado.** `nslookup` lo intenta 3 veces y se rinde |
+| `nslookup example.com` | Responde con las IP | El DNS del router funciona: el `!` lo deja fuera del bloqueo |
+| `curl -I https://www.wikipedia.org` | `HTTP/2 200` | La web funciona |
+
+**El registro (Live View):** → [bloqueo](<../evidencias/t5-opnsense-25-log-bloqueo-20261118.png>) · [web](<../evidencias/t5-opnsense-26-log-web-20261118.png>)
+
+| Interface | Dir | Hora | Protocolo | Origen → Destino | Acción | Regla |
+|---|---|---|---|---|---|---|
+| LAN | In | 09:24:18 | UDP | 192.168.27.199 → 8.8.8.8:53 | **block** (rojo) | `LAN-DNS-BLOQ` |
+| LAN | In | 09:24:23 | UDP | 192.168.27.199 → 8.8.8.8:53 | **block** | `LAN-DNS-BLOQ` |
+| LAN | In | 09:24:28 | UDP | 192.168.27.199 → 8.8.8.8:53 | **block** | `LAN-DNS-BLOQ` |
+| LAN | In | 09:25:17 | TCP | 192.168.27.199 → 185.15.5x.x | **pass** (verde) | `LAN-WEB-OK` |
+| WAN | Out | 09:25:17 | TCP | 10.0.2.15 → 185.15.5x.x | pass | *let out anything from firewall host itself* |
+
+Cómo se lee:
+- **Las tres líneas rojas, separadas 5 segundos:** son los **tres intentos** de `nslookup`. Espera 5 segundos la respuesta, no llega (el paquete se ha tirado) y vuelve a probar. Coincide con los tres `timed out` de la terminal.
+- **`LAN In`:** el paquete **entraba** al router por la LAN. Ahí es donde actúan mis reglas.
+- **La web sale dos veces a la misma hora (09:25:17):** es **la misma conexión** vista en dos puntos. Primero entra por la LAN desde 192.168.27.199 (`LAN-WEB-OK`); después sale por la WAN con origen **10.0.2.15**, porque el NAT ya ha cambiado la IP del cliente por la del router. La IP 185.15.5x.x es de Wikipedia.
+- **`anti-lockout rule`:** es mi Firefox entrando a la web de administración del router (192.168.27.1). Es la regla de serie que nunca deja bloquear ese acceso desde la LAN.
+- **La hora:** el Live View la escribe en **UTC** (la `T` y el formato `2026-11-18T09:24:18` son el estándar internacional). En España, en invierno, es una hora más: 10:24:18.
+
+**En una frase:** a las 10:24 (hora de España), `cli-linux` intentó tres veces preguntar al DNS 8.8.8.8 y el router lo tiró las tres veces por la regla `LAN-DNS-BLOQ`; a las 10:25 abrió una web de Wikipedia y el router la dejó pasar y la apuntó con `LAN-WEB-OK`.
 
 ### Copia de la configuración
 ### Fallo y recuperación
