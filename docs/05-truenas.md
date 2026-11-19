@@ -134,7 +134,7 @@ Luego borré `prueba.txt`.
 |---|---|---|---|---|
 | Router MikroTik | Backup completo y cifrado (`.backup`) y configuración en texto (`.rsc`) | Lo sube el propio router por SFTP con `/tool fetch` (detalle en [T5 comunicaciones](05-comunicaciones.md#copia-de-la-configuración)) | `copias/mikrotik` | Sin router no hay Internet ni DHCP en la LAN: es lo primero que hay que poder recuperar |
 | Router OPNsense | Configuración completa en XML **cifrado** | Se descarga con el navegador en `cli-linux` y se sube por SFTP con el usuario `opnsense` ([detalle](05-comunicaciones.md#copia-de-la-configuración-1)) | `copias/opnsense` | Igual que el MikroTik: es la salida a Internet de toda la LAN |
-| Router Debian + nftables | Pendiente | | | |
+| Router Debian + nftables | Paquete `.tar.gz` con sus 4 ficheros de configuración (reglas, DHCP, red e `ip_forward`) | Lo sube el propio router por SFTP con el usuario `nftables` ([detalle](05-comunicaciones.md#copia-de-la-configuración-2)) | `copias/nftables` | Igual que los otros routers: es la salida a Internet de toda la LAN |
 | Windows Server | Pendiente | | | |
 
 **Prueba de que la copia sirve:** borré la NAT del MikroTik y sus ficheros, bajé el backup desde este NAS y lo restauré. La LAN volvió a tener Internet ([fallo y recuperación](05-comunicaciones.md#fallo-y-recuperación)).

@@ -29,7 +29,7 @@ Discos **dinámicos**: el tamaño es el máximo, pero solo ocupan lo que se escr
 |---|---|---|---|---|---|---|---|
 | `r-mikrotik` | Router alternativa 1 | MikroTik RouterOS CHR 7.24.6 | 1 | 256 MB | Imagen CHR (~128 MB) | NAT + LAN | Instalado y configurado (T5) |
 | `r-opnsense` | Router alternativa 2 | OPNsense 26.7 (actualizado a 26.7.9) | 2 | 2 GB | 20 GB | NAT + LAN | Instalado y configurado (T5) |
-| `r-nftables` | Router alternativa 3 | Debian 13.7 sin escritorio + nftables | 1 | 1 GB (512 MB no bastan para el instalador) | 8 GB | NAT + LAN | Instalándose |
+| `r-nftables` | Router alternativa 3 | Debian 13.7 sin escritorio + nftables | 1 | 1 GB (512 MB no bastan para el instalador) | 8 GB | NAT + LAN | Instalada y configurada |
 | `nas-truenas` | NAS y copias | TrueNAS Community 25.10.8 | 2 | 8 GB | 20 GB sistema + 20 GB copias | LAN | Instalada; IP fija 192.168.27.10; ISO sacada |
 | `pve1` | Nodo Proxmox 1 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
 | `pve2` | Nodo Proxmox 2 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Creada; ISO comprobada puesta; sin instalar |

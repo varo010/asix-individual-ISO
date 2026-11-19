@@ -20,13 +20,13 @@ Comprobación completa: [t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha2
 
 | Tarea de la rúbrica | MikroTik | OPNsense | Debian + nftables |
 |---|---|---|---|
-| Instalar y comprobar versión y funcionamiento | [x] | [x] | [ ] |
-| Usuario(s) de administración | [x] | [x] | [ ] |
-| Red WAN y LAN | [x] | [x] | [ ] |
-| Acceso a Internet desde la LAN | [x] | [x] | [ ] |
-| Conexión permitida y bloqueada + registro interpretado | [x] | [x] | [ ] |
-| Copia de la configuración en el servidor de copias | [x] | [x] | [ ] |
-| Fallo provocado y recuperación | [x] | [x] | [ ] |
+| Instalar y comprobar versión y funcionamiento | [x] | [x] | [x] |
+| Usuario(s) de administración | [x] | [x] | [x] |
+| Red WAN y LAN | [x] | [x] | [x] |
+| Acceso a Internet desde la LAN | [x] | [x] | [x] |
+| Conexión permitida y bloqueada + registro interpretado | [x] | [x] | [x] |
+| Copia de la configuración en el servidor de copias | [x] | [x] | [x] |
+| Fallo provocado y recuperación | [x] | [x] | [x] |
 
 ## MikroTik (CHR)
 
@@ -605,22 +605,361 @@ Mensaje: *The configuration has been restored. The system is rebooting now.* →
 
 ## GNU/Linux (Debian) con nftables
 
+**Qué es:** un Debian normal, sin escritorio, al que **convierto en router a mano** con programas sueltos:
+
+| Pieza | Qué hace | En el MikroTik / OPNsense lo hacía… |
+|---|---|---|
+| `ip_forward` (ajuste del núcleo de Linux) | Deja que el equipo **pase paquetes** de una tarjeta a otra | Lo traen hecho de serie |
+| **nftables** (`nft`) | El **cortafuegos** de Linux: reglas de filtrado y NAT | IP → Firewall / Firewall → Rules |
+| **dnsmasq** | Servidor **DHCP y DNS** pequeño para la LAN | IP → DHCP Server / Dnsmasq |
+
+**Mismo escenario:** WAN en la NAT de VirtualBox y LAN en `lan-iso` con la IP **192.168.27.1**. Antes de encenderlo apagué los otros dos routers (misma IP y mismo DHCP en la misma red).
+
+**Cómo lo administro:** por **terminal**, conectándome por **SSH** desde el portátil. Igual que con WebFig, puse en VirtualBox una **redirección de puerto**: `127.0.0.1:2222` del portátil → puerto 22 (SSH) del router. Así puedo **copiar y pegar** comandos, cosa que en la ventana de VirtualBox no se puede. Entro con `ssh -p 2222 alvaro@127.0.0.1`. → [captura](<../evidencias/t5-nftables-10-ssh-desde-portatil-20261119.png>)
+
 ### Instalación
+
+- **VM:** 1 vCPU, **1 GB de RAM** (con 512 MB el instalador no arrancaba), disco de 8 GB, BIOS. Tarjeta 1 → NAT (WAN), tarjeta 2 → `lan-iso` (LAN).
+- Debian 13.7 *netinst* (ISO comprobada con su hash, ver arriba).
+- **Programas:** solo **servidor SSH** y **utilidades estándar**, sin escritorio: un router no necesita entorno gráfico, y cuanto menos instalado, menos que actualizar y menos fallos de seguridad. → [selección](<../evidencias/t5-nftables-01-seleccion-programas-20261118.png>) · [primer arranque](<../evidencias/t5-nftables-02-primer-arranque-20261118.png>)
+
 ### Usuario de administración
+
+- Administro con el usuario **`alvaro`**, que tiene permiso de **`sudo`** (ejecutar órdenes como administrador poniendo `sudo` delante). Por SSH no se entra como `root`.
+- **`root` está bloqueado:** en la instalación dejé su contraseña vacía y Debian lo bloquea solo. Se comprueba con `sudo passwd -S root`: la `L` (*locked*) de la segunda columna significa bloqueado; nadie puede entrar como `root` con contraseña. → [captura](<../evidencias/t5-nftables-26-root-bloqueado-20261119.png>)
+- **Ventaja:** cada orden de administrador queda apuntada en el registro con el nombre de quien la hizo, y para hacer algo peligroso hay que escribir `sudo` a propósito.
+
 ### Red WAN y LAN
+
+**Ver las tarjetas** (`ip -br a`): → [captura](<../evidencias/t5-nftables-03-tarjetas-antes-20261119.png>)
+
+| Tarjeta | Red | IP |
+|---|---|---|
+| `enp0s3` | NAT (WAN) | 10.0.2.15, por DHCP (el instalador ya la dejó configurada) |
+| `enp0s8` | `lan-iso` (LAN) | Ninguna todavía |
+
+**IP fija de la LAN.** Añadí al final de `/etc/network/interfaces`: → [fichero](<../evidencias/t5-nftables-04-interfaces-20261119.png>) · [IP puesta](<../evidencias/t5-nftables-05-lan-ip-fija-20261119.png>)
+
+```
+# LAN (red lan-iso)
+auto enp0s8
+iface enp0s8 inet static
+    address 192.168.27.1/24
+```
+
+Sin `gateway`: la puerta de enlace (salida a Internet) la da la WAN.
+
+**Dejar pasar paquetes (`ip_forward`).** Linux, de serie, **no reenvía** paquetes entre tarjetas: los que no son para él los tira. Lo activo con un fichero propio, para que no se pierda al reiniciar: → [captura](<../evidencias/t5-nftables-06-ip-forward-20261119.png>)
+
+```
+echo 'net.ipv4.ip_forward=1' | sudo tee /etc/sysctl.d/99-router.conf
+sudo sysctl --system
+```
+
+Si falta: los clientes reciben IP y llegan al router, pero **nada pasa a Internet**.
+
+**DHCP y DNS para la LAN** con dnsmasq, en `/etc/dnsmasq.d/lan.conf`: → [funcionando](<../evidencias/t5-nftables-11-dnsmasq-funcionando-20261119.png>)
+
+```
+interface=enp0s8
+bind-interfaces
+dhcp-range=192.168.27.100,192.168.27.199,255.255.255.0,12h
+dhcp-option=option:router,192.168.27.1
+dhcp-option=option:dns-server,192.168.27.1
+```
+
+| Línea | Qué hace | Qué pasa si falta |
+|---|---|---|
+| `interface=enp0s8` | Solo atiende por la LAN | Daría DHCP **hacia la WAN** también |
+| `bind-interfaces` | Escucha solo en esa tarjeta | Puede chocar con otros servicios que usan el puerto 53 |
+| `dhcp-range` | Reparte de la .100 a la .199, préstamos de 12 h | No da IP a nadie |
+| `option:router` | Dice a los clientes que su puerta de enlace es .1 | Los clientes no saben por dónde salir |
+| `option:dns-server` | Dice a los clientes que su DNS es .1 | No traducen nombres de web |
+
+dnsmasq **reenvía** las preguntas DNS al DNS que tiene el propio router (el de la NAT de VirtualBox), como hacía el MikroTik. Así no tuve el problema del DNS de OPNsense.
+
+**Cliente:** `cli-linux` recibió la **192.168.27.136** con puerta de enlace .1. → [captura](<../evidencias/t5-nftables-14-cliente-ip-dhcp-20261119.png>)
+
 ### Salida a Internet
+
+El NAT (*masquerade*) va en el fichero de nftables, junto con las reglas (siguiente apartado).
+
+**Problema: `apt` no podía instalar nada.** → [error](<../evidencias/t5-nftables-07-apt-error-http-bloqueado-20261119.png>)
+
+```
+No se pudo conectar a deb.debian.org:http
+```
+
+- **Causa:** la red donde estaba **bloquea el puerto 80 (HTTP)**; el 443 (HTTPS) sí pasa. Los repositorios de Debian venían con `http://`. → [repositorios](<../evidencias/t5-nftables-08-repositorios-http-20261119.png>)
+- **Solución:** cambiar `http://` por `https://` en todo el fichero:
+
+```
+sudo sed -i 's|http://|https://|g' /etc/apt/sources.list
+```
+
+`sed -i` = editar el fichero **en el sitio**; `s|A|B|g` = sustituir A por B, todas las veces. Después `apt install dnsmasq` funcionó. → [captura](<../evidencias/t5-nftables-09-apt-install-https-20261119.png>)
+
+En `cli-linux` (Ubuntu) pasó lo mismo con `apt install curl`, y en el registro del router se veían los intentos al puerto 80 pasando bien por él: el bloqueo **no es de mi router**, es de la red de fuera. → [captura](<../evidencias/t5-nftables-15-cliente-apt-http-bloqueado-20261119.png>). Por eso en las pruebas uso **`wget`**, que Ubuntu ya trae.
+
 ### Conexión permitida y bloqueada
+
+Las mismas dos reglas que en los otros routers. Todo va en **un fichero de texto**, `/etc/nftables.conf`, que se carga al arrancar: → [fichero](<../evidencias/t5-nftables-12-fichero-reglas-20261119.png>) · [reglas cargadas](<../evidencias/t5-nftables-13-reglas-cargadas-20261119.png>)
+
+```
+flush ruleset
+table inet filtro {
+    chain forward {
+        type filter hook forward priority filter; policy accept;
+        iifname "enp0s8" oifname "enp0s3" tcp dport { 80, 443 } ct state new log prefix "LAN-WEB-OK " accept
+        iifname "enp0s8" udp dport 53 log prefix "LAN-DNS-BLOQ " drop
+    }
+}
+table ip nat {
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+        oifname "enp0s3" masquerade
+    }
+}
+```
+
+| Parte | Qué significa |
+|---|---|
+| `flush ruleset` | Borra todas las reglas antes de cargar las del fichero (si no, se sumarían a las que ya hay) |
+| `table` / `chain` | Las reglas van en **cadenas**, y las cadenas en **tablas** |
+| `hook forward` | La cadena mira los paquetes que **atraviesan** el router (de la LAN a Internet). Lo que va **al propio router** pasa por otra cadena, `input` |
+| `policy accept` | Lo que no coincida con ninguna regla, pasa |
+| `iifname` / `oifname` | Tarjeta por la que **entra** / por la que **sale** |
+| `tcp dport { 80, 443 }` | Puerto de destino 80 o 443 (web). Las llaves agrupan, como el alias de OPNsense |
+| `ct state new` | Solo el **primer paquete** de cada conexión: así el registro apunta una línea por conexión y no una por paquete |
+| `log prefix "…"` | Apunta el paquete en el registro con esa etiqueta |
+| `accept` / `drop` | Dejar pasar / tirar sin avisar |
+| `masquerade` | El NAT: cambia la IP privada del cliente por la de la WAN al salir |
+
+**Por qué la regla de DNS no tapa el DNS de la LAN:** cuando un cliente pregunta al **router** (.1), el paquete va por `input`, no por `forward`. La regla solo bloquea a quien intenta usar **otro** DNS de Internet (como 8.8.8.8) saltándose el del router.
+
+Para cargar el fichero: `sudo systemctl enable --now nftables` (cargarlo ahora y en cada arranque) y `sudo nft list ruleset` para ver lo que hay cargado.
+
+**Pruebas desde `cli-linux`:**
+
+| Prueba | Resultado | Evidencia |
+|---|---|---|
+| `nslookup example.com` (DNS del router) | Responde | [captura](<../evidencias/t5-nftables-16-prueba-dns-20261119.png>) |
+| `nslookup example.com 8.8.8.8` (DNS de fuera) | *timed out*: bloqueado | [captura](<../evidencias/t5-nftables-16-prueba-dns-20261119.png>) |
+| Firefox → Google «hora» | Carga (11:11:04) | [captura](<../evidencias/t5-nftables-17-cliente-web-ok-20261119.png>) |
+
+**Registro** (`sudo journalctl -k | grep LAN-`; `-k` = mensajes del **núcleo**, que es donde escribe nftables): → [web](<../evidencias/t5-nftables-18-log-web-20261119.png>) · [DNS bloqueado](<../evidencias/t5-nftables-19-log-dns-bloqueado-20261119.png>)
+
+| Trozo de la línea | Qué significa |
+|---|---|
+| `LAN-DNS-BLOQ` / `LAN-WEB-OK` | La etiqueta de la regla que lo apuntó |
+| `IN=enp0s8 OUT=enp0s3` | Entró por la LAN e iba a salir por la WAN |
+| `SRC=192.168.27.136` | Quién: `cli-linux` |
+| `DST=8.8.8.8` | A dónde iba |
+| `PROTO=UDP DPT=53` | Protocolo y puerto: DNS |
+
+Salen **3 líneas** de `LAN-DNS-BLOQ` separadas 5 segundos (11:10:22, :27 y :32): `nslookup` **reintenta** al no recibir respuesta.
+
 ### Copia de la configuración
+
+**Qué copio:** a diferencia de los otros routers, aquí **no hay un botón de copia**: la configuración son **4 ficheros de texto** que he escrito yo. Los meto en un paquete `.tar.gz` (un fichero que junta varios y los comprime, como un `.zip`):
+
+```
+cd ~
+sudo tar czf copia-r-nftables-$(date +%Y%m%d-%H%M).tar.gz /etc/nftables.conf /etc/dnsmasq.d/lan.conf /etc/network/interfaces /etc/sysctl.d/99-router.conf
+tar tzf copia-r-nftables-*.tar.gz
+```
+
+| Parte | Qué significa |
+|---|---|
+| `c` / `t` / `x` | **C**rear el paquete / lis**t**ar lo que hay dentro / e**x**traer |
+| `z` | Comprimir (gzip) |
+| `f` | El nombre del paquete va justo detrás |
+| `$(date +%Y%m%d-%H%M)` | Pone la fecha y hora en el nombre: `copia-r-nftables-20261119-1121.tar.gz` |
+| `sudo` | Hace falta para leer algunos ficheros de `/etc` |
+
+Resultado: **1048 bytes**. OPNsense ocupaba 59 KB porque guarda todo en un XML enorme; aquí solo va lo que he cambiado yo.
+
+**En el NAS:** dataset **`copias/nftables`** y usuario **`nftables`** (solo SSH), como para los otros routers. → [usuario](<../evidencias/t5-truenas-16-usuario-nftables-20261119.png>) · [dataset](<../evidencias/t5-truenas-17-dataset-nftables-20261119.png>)
+
+> **⬆️ Subir la copia al NAS** (desde `r-nftables`)
+>
+> ```
+> sftp nftables@192.168.27.10
+> put copia-r-nftables-20261119-1121.tar.gz
+> ls -l
+> bye
+> ```
+>
+> Los comandos `put`, `ls` y `bye` se escriben **dentro** de sftp (cuando sale `sftp>`), no en la terminal normal.
+
+Resultado: en el NAS `/mnt/copias/nftables/copia-r-nftables-20261119-1121.tar.gz`, 1048 bytes, **el mismo tamaño** que en el router. La huella del NAS (`SHA256:js+p3aiajK0n…`) es la misma de siempre; la preguntó porque era la primera vez que **este** equipo se conectaba. → [captura](<../evidencias/t5-nftables-20-copia-subida-nas-20261119.png>)
+
+**Igual que el MikroTik, la copia la sube el propio router**, sin pasar por otro equipo. No va cifrada, pero tampoco lleva contraseñas: solo IP y reglas.
+
 ### Fallo y recuperación
+
+**Qué simulo:** el mismo desastre doble que en los otros routers.
+1. Alguien **machaca el fichero de reglas** y las aplica: desaparecen el NAT y el cortafuegos. La LAN se queda **sin Internet**.
+2. Además se **borra la copia** que había en el router.
+
+Así la única forma de arreglarlo es **la copia del NAS**. Apunto la hora con `date` en cada paso para medir cuánto se tarda.
+
+**Equipos que intervienen:**
+
+| Equipo | Papel en la prueba |
+|---|---|
+| `r-nftables` (192.168.27.1) | El router que se rompe y se recupera |
+| `cli-linux` (192.168.27.136) | Cliente de la LAN: sirve para ver si hay Internet o no |
+| TrueNAS (192.168.27.10) | Donde está guardada la copia |
+
+#### 1. Antes del fallo (11:25:17)
+
+En `cli-linux`:
+
+```
+date; wget -S --spider https://www.wikipedia.org 2>&1 | grep "HTTP/"
+HTTP/1.1 200 OK
+```
+
+| Parte | Qué hace |
+|---|---|
+| `date;` | Escribe la hora y luego (`;`) sigue con la siguiente orden |
+| `wget --spider` | Pregunta a la web si existe **sin descargar** la página |
+| `-S` | Enseña la respuesta del servidor |
+| `2>&1 \| grep "HTTP/"` | wget escribe esa respuesta por la salida de errores; `2>&1` la junta con la normal para que `grep` pueda filtrar solo la línea del código |
+| `200 OK` | La web ha respondido: **hay Internet** |
+
+→ [captura](<../evidencias/t5-nftables-21-antes-del-fallo-web-ok-20261119.png>)
+
+#### 2. Provoco el fallo
+
+En el router (por SSH):
+
+```
+echo 'flush ruleset' | sudo tee /etc/nftables.conf
+sudo systemctl restart nftables
+sudo nft list ruleset
+rm ~/copia-r-nftables-*.tar.gz
+ls ~
+```
+
+| Orden | Qué hace |
+|---|---|
+| `echo 'flush ruleset' \| sudo tee /etc/nftables.conf` | **Sobrescribe** el fichero de reglas: ahora solo contiene `flush ruleset` («borra todo»). `tee` escribe en el fichero lo que le llega y además lo enseña en pantalla |
+| `sudo systemctl restart nftables` | Vuelve a cargar el fichero, es decir, **borra todas las reglas** |
+| `sudo nft list ruleset` | Enseña las reglas cargadas: **no sale nada** |
+| `rm ~/copia-r-nftables-*.tar.gz` | Borra la copia local. Preguntó `¿borrar … protegido contra escritura? (s/n)`: el fichero lo creó `root` (con `sudo tar`), y `rm` avisa antes de borrar un fichero que no es tuyo. Respondí `s` |
+| `ls ~` | Comprueba que la copia ya no está |
+
+→ [captura](<../evidencias/t5-nftables-22-romper-reglas-y-borrar-copia-20261119.png>)
+
+**Qué se ha roto exactamente:**
+- **Sin `masquerade`:** los paquetes de los clientes salen a Internet con su IP privada (192.168.27.x). Nadie en Internet sabe devolver la respuesta a esa IP: la conexión nunca recibe contestación.
+- **Sin el cortafuegos:** tampoco quedan las reglas `LAN-WEB-OK` ni `LAN-DNS-BLOQ`, ni su registro.
+- **Qué sigue funcionando:** el `ip_forward` y dnsmasq están en **otros ficheros** que no he tocado. Los clientes siguen recibiendo IP y DNS; solo falla la salida a Internet.
+
+#### 3. Compruebo que está roto (11:28:44)
+
+En `cli-linux`, la misma prueba, esperando como mucho 10 segundos y un solo intento:
+
+```
+date; wget -S --spider --timeout=10 --tries=1 https://www.wikipedia.org 2>&1 | grep "HTTP/"
+```
+
+**No sale ninguna línea `HTTP/`**: la web no ha contestado nada en 10 segundos. Antes del fallo salía `200 OK`. → [captura](<../evidencias/t5-nftables-23-cliente-sin-internet-20261119.png>)
+
+| Opción | Qué hace |
+|---|---|
+| `--timeout=10` | Esperar la respuesta como mucho 10 segundos |
+| `--tries=1` | Un solo intento (de serie wget lo intenta 20 veces y tardaría minutos) |
+
+#### 4. Recupero desde el NAS (inicio: 11:29:16)
+
+El router **sí llega al NAS aunque esté roto**: el NAS está en la **LAN**, así que la conexión no necesita NAT ni pasa por la cadena `forward`. Lo que se ha roto es la salida **de los clientes** a Internet.
+
+En el router:
+
+> **⬇️ Bajar la copia del NAS** (desde `r-nftables`)
+>
+> ```
+> date
+> sftp nftables@192.168.27.10
+> get copia-r-nftables-20261119-1121.tar.gz
+> bye
+> ```
+>
+> `get` es lo contrario de `put`: **trae** el fichero del NAS al equipo donde estoy. Igual que al subir, `get` y `bye` se escriben **dentro** de sftp.
+
+Resultado: `100% 1048`, el mismo tamaño que tenía la copia original: ha llegado entera.
+
+> **🔁 Restaurar las reglas** (en `r-nftables`)
+>
+> ```
+> sudo tar xzf copia-r-nftables-20261119-1121.tar.gz -C / etc/nftables.conf
+> sudo systemctl restart nftables
+> sudo nft list ruleset
+> date
+> ```
+
+| Parte | Qué hace |
+|---|---|
+| `tar xzf copia….tar.gz` | E**x**trae del paquete comprimido |
+| `-C /` | Lo extrae **a partir de la raíz** (`/`). Dentro del paquete el fichero se llama `etc/nftables.conf` (sin la `/` del principio), así que acaba en `/etc/nftables.conf`, **su sitio original**, sobrescribiendo el roto |
+| `etc/nftables.conf` al final | Saca **solo ese fichero**. Los otros tres que hay en la copia no se han roto y no hace falta tocarlos |
+| `systemctl restart nftables` | Carga el fichero recuperado |
+| `nft list ruleset` | Comprueba que han vuelto la tabla `filtro` con las dos reglas y la tabla `nat` con el `masquerade` |
+
+→ [captura de la bajada y la restauración](<../evidencias/t5-nftables-24-recuperacion-desde-nas-20261119.png>)
+
+**Hora final: 11:30:06.**
+
+#### 5. Compruebo la recuperación (11:30:07)
+
+En `cli-linux`, la misma orden que en el paso 3:
+
+```
+date; wget -S --spider --timeout=10 --tries=1 https://www.wikipedia.org 2>&1 | grep "HTTP/"
+HTTP/1.1 200 OK
+```
+
+Vuelve el **`200 OK`**: la LAN tiene Internet otra vez. → [captura](<../evidencias/t5-nftables-25-cliente-web-ok-otra-vez-20261119.png>)
+
+#### Resumen de la prueba
+
+| Hora | Dónde | Qué pasó |
+|---|---|---|
+| 11:25:17 | `cli-linux` | Hay Internet (`200 OK`) |
+| ≈11:27 | `r-nftables` | Fichero de reglas machacado, reglas borradas y copia local borrada |
+| 11:28:44 | `cli-linux` | Sin Internet (sin respuesta en 10 s) |
+| 11:29:16 | `r-nftables` | Empiezo la recuperación: bajo la copia del NAS |
+| 11:30:06 | `r-nftables` | Reglas restauradas y comprobadas |
+| 11:30:07 | `cli-linux` | Hay Internet otra vez (`200 OK`) |
+
+**Tiempo de recuperación: 50 segundos** (de 11:29:16 a 11:30:06). Es el más rápido de los tres routers: no hay que reiniciar el equipo, solo recargar las reglas, y el fichero es pequeño.
+
+**Problema que tuve:** al hacer `ls ~` aparecieron dos ficheros raros, `bye` y `get`. En un paso anterior pegué en la **terminal normal** líneas que empezaban por `sftp>` (copiadas tal cual de las instrucciones). Para la terminal, `>` significa «**guarda la salida en un fichero**», así que `sftp> get …` creó un fichero llamado `get`, y `sftp> bye` uno llamado `bye`. Son ficheros vacíos sin importancia; se borran con `rm ~/bye ~/get`. **Lección:** `sftp>` es lo que escribe sftp en pantalla para pedir una orden; no hay que copiarlo.
+
+**Resultado:** con la copia del NAS, el router ha quedado exactamente como antes, sin volver a escribir las reglas a mano.
+
+**Resumen de los comandos de copia:**
+
+| Para qué | Dónde | Comando |
+|---|---|---|
+| Crear la copia | `r-nftables` | `sudo tar czf copia-r-nftables-$(date +%Y%m%d-%H%M).tar.gz /etc/nftables.conf /etc/dnsmasq.d/lan.conf /etc/network/interfaces /etc/sysctl.d/99-router.conf` |
+| Ver qué hay dentro | `r-nftables` | `tar tzf FICHERO` |
+| ⬆️ **Subir** al NAS | `r-nftables` | `sftp nftables@192.168.27.10` y dentro `put FICHERO` |
+| ⬇️ **Bajar** del NAS | `r-nftables` | `sftp nftables@192.168.27.10` y dentro `get FICHERO` |
+| 🔁 Restaurar las reglas | `r-nftables` | `sudo tar xzf FICHERO -C / etc/nftables.conf` y `sudo systemctl restart nftables` |
+| 🔁 Restaurar todo | `r-nftables` | `sudo tar xzf FICHERO -C /` y reiniciar el equipo |
 
 ## Comparación de las tres soluciones
 
 | Criterio | MikroTik | OPNsense | Debian + nftables |
 |---|---|---|---|
-| Recursos que consume (medidos) | | | |
-| Cómo se administra | Web (WebFig) y terminal | Web; consola solo para lo básico (tarjetas e IP) | |
-| Cómo se hace la copia | Backup cifrado + export; **el router la sube solo** al NAS por SFTP (`/tool fetch`) | XML cifrado; **se descarga con el navegador** y se sube al NAS desde otro equipo | |
-| Tiempo de recuperación medido | Unos minutos (no lo cronometré) | Unos 5 min 30 s, contando un error mío | |
+| Recursos que consume (VM) | 1 vCPU, 256 MB | 2 vCPU, 2 GB | 1 vCPU, 1 GB |
+| Cómo se administra | Web (WebFig) y terminal | Web; consola solo para lo básico (tarjetas e IP) | Solo terminal (SSH desde el portátil); todo son ficheros de texto |
+| Cómo se hace la copia | Backup cifrado + export; **el router la sube solo** al NAS por SFTP (`/tool fetch`) | XML cifrado; **se descarga con el navegador** y se sube al NAS desde otro equipo | `.tar.gz` con 4 ficheros de texto (1 KB); **el router la sube solo** por SFTP |
+| Tiempo de recuperación medido | Unos minutos (no lo cronometré) | Unos 5 min 30 s, contando un error mío | **50 s** (sin reiniciar el router) |
 
 ## Comparación con el grupo
 
