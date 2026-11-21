@@ -104,4 +104,5 @@ Al principio puse **2 nodos** para ahorrar RAM. Lo cambié a **3** (`pve3`) por 
 
 | Problema | Causa | Solución | Incidencia |
 |---|---|---|---|
-| VirtualBox no arranca VM en el portátil de casa | Secure Boot activado y la clave de los controladores de VirtualBox sin registrar en ese portátil | Registrar la clave en el portátil de casa | [INC-01](../incidencias/INC-01-virtualbox-secure-boot-casa.md) |
+| VirtualBox no arranca VM en el portátil de casa | Secure Boot activado y la clave de los controladores de VirtualBox sin registrar en ese portátil | Se desactivó Secure Boot en el portátil de casa (21/11). Cerrada | [INC-01](../incidencias/INC-01-virtualbox-secure-boot-casa.md) |
+| El portátil se queda corto de RAM con todas las VM | Las 9 VM de un escenario completo tienen asignados 34 GB (más que los 32 del portátil) | Arrancar solo las VM de cada tarea; medido en [T7](07-rendimiento.md): las 9 caben porque no usan toda su RAM | — |
