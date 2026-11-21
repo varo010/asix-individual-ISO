@@ -1,0 +1,44 @@
+== 21/11/2026 21:58:25 Escenario: 6 VM en reposo (router, NAS, srv-linux, pve1-3) ==
+-- VM arrancadas
+  r-nftables memory=1024 cpus=1 
+  nas-truenas memory=8192 cpus=2 
+  pve1 memory=4096 cpus=2 
+  pve2 memory=4096 cpus=2 
+  srv-linux memory=1024 cpus=1 
+  pve3 memory=4096 cpus=2 
+-- free -m
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:           31811       21648        7266        1623        4977       10163
+Inter:         16144           0       16144
+-- vmstat 5 6
+procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+ r  b   swpd  libre   búf caché   si   so    bi    bo   in   cs us sy id wa st gu
+ 2  0    512 7440900 683224 4413780    0    0  3301  3802 15123    8  2  1 96  0  0  1
+ 1  0    512 7450192 683260 4408648    0    0   237   472 17220 28235  4  1 94  0  0  2
+ 1  0    512 7492868 683292 4394204    0    0   211   938 17734 29322  3  1 94  0  0  2
+ 1  0    512 7493044 683332 4394352    0    0   103  1076 17229 29053  3  1 94  0  0  1
+ 0  0    512 7501772 683372 4390224    0    0   235    91 17345 29607  3  1 94  0  0  1
+ 7  0    512 7518844 683416 4387976    0    0   103   210 17330 28368  3  1 94  0  0  1
+-- mpstat 5 1 (resumen)
+Average:     all    3.29    0.09    1.00    0.10    0.00    0.01    0.00    0.00    1.33   94.16
+-- iostat -dx 5 2 (disco USB sda)
+Device            r/s     rkB/s   rrqm/s  %rrqm r_await rareq-sz     w/s     wkB/s   wrqm/s  %wrqm w_await wareq-sz     d/s     dkB/s   drqm/s  %drqm d_await dareq-sz     f/s f_await  aqu-sz  %util
+sda              2,00    103,00     0,00   0,00    0,60    51,50   13,60     65,40     3,00  18,07    0,59     4,81    0,00      0,00     0,00   0,00    0,00     0,00    2,40    1,00    0,01   0,36
+-- red (sar -n DEV 5 1)
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+Average:      enp12s0      9.60      9.20      2.01      1.61      0.00      0.00      0.00      0.00
+Average:    wlp0s20f3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+-- procesos que más CPU usan
+%CPU   RSS COMMAND
+ 100  4776 ps
+38.0 4443892 VirtualBoxVM
+28.1 187908 Xorg
+23.6 2563652 VBoxHeadless
+18.9 171532 cursor
+17.6 1500820 VBoxHeadless
+15.2 432020 cursor
+-- swap
+NAME       TYPE      SIZE USED PRIO
+/swapfile  file        8G   0B   -2
+/dev/zram0 partition 7,8G 512K  100

@@ -1,0 +1,33 @@
+== 21/11/2026 21:32:16 Escenario: 8 VM (router, NAS, srv-dc, srv-linux, cli-win11, pve1-3 actualizándose) ==
+  r-nftables memory=1024 cpus=1 
+  nas-truenas memory=8192 cpus=2 
+  pve1 memory=4096 cpus=2 
+  pve2 memory=4096 cpus=2 
+  srv-dc memory=4096 cpus=2 
+  srv-linux memory=1024 cpus=1 
+  cli-win11 memory=4096 cpus=2 
+  pve3 memory=4096 cpus=2 
+-- free -m
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:           31811       27894         278        1735        5832        3917
+Inter:         16144           0       16144
+-- vmstat 5 6
+--procs-- -----------------------memoria---------------------- ---interc-- -----es---- -sistema-- ----------cpu----------
+   r    b         swpd        libre         búf       caché   si   so    bi    bo   in   cs  us  sy  id  wa  st  gu
+   1    0            0       285456       577248      5395176    0    0  2596  2543 14671    8   1   1  97   0   0   1
+   3    0            0       310880       577412      5385180    0    0   252  3230 23404 39136   3   1  93   0   0   3
+   2    0            0       287328       577948      5373236    0    0   838  4125 28956 52830   4   1  90   0   0   5
+   4    0            0       303356       578176      5366688    0    0  1068 10568 26339 45599   4   1  91   0   0   4
+   6    0            0       320148       578256      5373444    0    0   233   723 23594 38568   4   1  92   0   0   3
+   2    0            0       284488       578408      5363052    0    0   221  6099 31155 59786   4   2  90   0   0   4
+-- mpstat 5 1 (resumen)
+21:32:47     all    3,76    0,10    1,53    0,59    0,00    0,04    0,00    0,00    4,16   89,81
+Media:       all    3,76    0,10    1,53    0,59    0,00    0,04    0,00    0,00    4,16   89,81
+-- iostat -dx 5 2 (disco USB sda)
+sda             71,17      2,53     7,27   9,27    0,80    36,45   34,04      2,49    18,26  34,92   10,94    74,79    0,00      0,00     0,00   0,00    0,00     0,00    3,20    1,37    0,43   3,98
+Device            r/s     rMB/s   rrqm/s  %rrqm r_await rareq-sz     w/s     wMB/s   wrqm/s  %wrqm w_await wareq-sz     d/s     dMB/s   drqm/s  %drqm d_await dareq-sz     f/s f_await  aqu-sz  %util
+sda             22,80      0,20     0,00   0,00    8,46     9,06   61,80     10,12    32,80  34,67   18,37   167,71    0,00      0,00     0,00   0,00    0,00     0,00    6,00    3,50    1,35  26,04
+-- swap
+NAME       TYPE      SIZE USED PRIO
+/swapfile  file        8G   0B   -2
+/dev/zram0 partition 7,8G 256K  100

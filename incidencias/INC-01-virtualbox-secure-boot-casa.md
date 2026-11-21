@@ -18,7 +18,9 @@
 - 15/11/2026: paso 1 hecho (`mokutil --list-new` muestra nuestra clave esperando a que se confirme). **Pendiente: reiniciar y confirmar en la pantalla azul (pasos 2–4).**
 - 16/11/2026, en el portátil de clase (Secure Boot desactivado): los controladores de VirtualBox cargan y las VM `r-mikrotik`, `pve1` (con VT-x anidado) y `srv-dc` arrancan. Confirma que el problema es solo de la placa del portátil de casa. **En casa sigue pendiente la pantalla azul.**
 
-## Pasos
+- 21/11/2026: **cerrada.** Al final se desactivó Secure Boot en la BIOS del portátil de casa. Comprobación: `mokutil --sb-state` → `SecureBoot disabled`; `lsmod | grep vbox` → los 3 controladores cargados; las 11 VM arrancan. **Aviso:** al cambiar Secure Boot, el Windows del disco interno (con BitLocker) puede pedir la clave de recuperación de BitLocker la próxima vez que arranque: hay que tenerla a mano (se guarda en la cuenta de Microsoft).
+
+## Pasos (la solución sin desactivar Secure Boot, por si hace falta en otro equipo)
 
 1. Pedir el registro de la clave. Pide una contraseña de un solo uso: elige una sencilla, solo se usa en el paso 3.
 

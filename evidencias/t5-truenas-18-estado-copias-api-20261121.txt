@@ -1,0 +1,37 @@
+Estado del NAS (TrueNAS) leído por su API el 21/11/2026 21:30
+
+== Datasets del pool copias ==
+copias                 usado:  19.26 MiB
+copias/proxmox         usado:    108 KiB
+copias/mikrotik        usado:    152 KiB
+copias/nftables        usado:    120 KiB
+copias/srv-linux       usado:    564 KiB
+copias/cli-win11       usado:    132 KiB
+copias/cli-linux       usado:   2.77 MiB
+copias/srv-dc          usado:   9.25 MiB
+copias/opnsense        usado:    176 KiB
+
+== Usuarios de copia (uno por equipo, solo SFTP) ==
+mikrotik     carpeta: /mnt/copias/mikrotik     clave SSH: no (contraseña)
+opnsense     carpeta: /mnt/copias/opnsense     clave SSH: no (contraseña)
+nftables     carpeta: /mnt/copias/nftables     clave SSH: no (contraseña)
+srv-linux    carpeta: /mnt/copias/srv-linux    clave SSH: sí
+srv-dc       carpeta: /mnt/copias/srv-dc       clave SSH: sí
+cli-win11    carpeta: /mnt/copias/cli-win11    clave SSH: sí
+cli-linux    carpeta: /mnt/copias/cli-linux    clave SSH: sí
+proxmox      carpeta: /mnt/copias/proxmox      clave SSH: no (contraseña)
+
+== Ficheros de copia ==
+/mnt/copias/mikrotik/r-mikrotik-20261117.backup                        22149 bytes
+/mnt/copias/mikrotik/r-mikrotik-20261117.rsc                             976 bytes
+/mnt/copias/opnsense/config-r-opnsense.local-20261118093237.xml        60067 bytes
+/mnt/copias/nftables/copia-r-nftables-20261119-1121.tar.gz              1048 bytes
+/mnt/copias/srv-linux/copia-srv-linux-20261121-2041.tar.gz             434809 bytes
+/mnt/copias/srv-dc/srv-dc-20261121-2109.zip                        5014219 bytes
+/mnt/copias/srv-dc/srv-dc-20261121-2107.zip                        5014739 bytes
+/mnt/copias/cli-linux/copia-cli-linux-20261121-2112.tar.gz            1376281 bytes
+/mnt/copias/cli-linux/copia-cli-linux-20261121-2113.tar.gz            1376752 bytes
+/mnt/copias/cli-win11/cli-win11-20261121-2128.zip                         211 bytes
+
+-- Actualización 21/11/2026 22:35 (después de montar las copias de Proxmox):
+proxmox      carpeta: /mnt/copias/proxmox     claves SSH: 3 (pve1, pve2, pve3)

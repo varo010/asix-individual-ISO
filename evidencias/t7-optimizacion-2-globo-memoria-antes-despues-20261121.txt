@@ -1,0 +1,20 @@
+== ANTES 21/11/2026 22:11:24 sin globo de memoria (9 VM + vm-debian dentro de pve3)
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:           31811       29113         345        1590        4401        2698
+Inter:         16144           1       16143
+srv-dc          Guest/RAM/Usage/Total                    4174724 kB
+srv-dc          Guest/RAM/Usage/Free                     2797312 kB
+srv-dc          Guest/RAM/Usage/Balloon                  0 kB
+cli-win11       Guest/RAM/Usage/Total                    4174724 kB
+cli-win11       Guest/RAM/Usage/Free                     2766084 kB
+cli-win11       Guest/RAM/Usage/Balloon                  0 kB
+== DESPUÉS 21/11/2026 22:11:49 globo de 1536 MB en srv-dc y cli-win11 (VBoxManage controlvm VM guestmemoryballoon 1536)
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:           31811       29030         426        1552        4365        2781
+Inter:         16144           1       16143
+srv-dc          Guest/RAM/Usage/Total                    4174724 kB
+srv-dc          Guest/RAM/Usage/Free                     1293552 kB
+srv-dc          Guest/RAM/Usage/Balloon                  1572864 kB
+cli-win11       Guest/RAM/Usage/Total                    4174724 kB
+cli-win11       Guest/RAM/Usage/Free                     1325596 kB
+cli-win11       Guest/RAM/Usage/Balloon                  1572864 kB

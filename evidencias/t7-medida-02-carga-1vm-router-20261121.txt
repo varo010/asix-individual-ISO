@@ -1,0 +1,39 @@
+== 21/11/2026 22:23:21 Escenario: 1 VM (solo el router r-nftables) ==
+-- VM arrancadas
+  r-nftables memory=1024 cpus=1 
+-- free -m
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:           31811        8121       22765        1519        2914       23690
+Inter:         16144          56       16088
+-- vmstat 5 6
+procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+ r  b   swpd  libre   búf caché   si   so    bi    bo   in   cs us sy id wa st gu
+ 1  0  57600 23312040  51344 2932848    0    1  3684  4069 15480    9  2  1 96  0  0  1
+ 2  0  57600 23344948  51360 2930628    0    0     2    36 11868 19453  3  1 96  0  0  0
+ 2  0  57600 23357788  51384 2913376    0    0    25   150 11800 19540  3  1 96  0  0  0
+ 2  0  57600 23379740  51400 2925976    0    0    23    78 11853 19928  3  1 96  0  0  0
+ 2  0  57600 23391140  51416 2911504    0    0     0    40 11613 19401  3  1 96  0  0  0
+ 1  0  57600 23384332  51428 2925992    0    0     1   490 12007 19809  3  1 96  0  0  0
+-- mpstat 5 1 (resumen)
+Average:     all    3.16    0.03    0.92    0.14    0.00    0.02    0.00    0.00    0.04   95.70
+-- iostat -dx 5 2 (disco USB sda)
+Device            r/s     rkB/s   rrqm/s  %rrqm r_await rareq-sz     w/s     wkB/s   wrqm/s  %wrqm w_await wareq-sz     d/s     dkB/s   drqm/s  %drqm d_await dareq-sz     f/s f_await  aqu-sz  %util
+sda              0,00      0,00     0,00   0,00    0,00     0,00    8,40     51,20     3,60  30,00    0,50     6,10    0,00      0,00     0,00   0,00    0,00     0,00    1,20    1,17    0,01   0,16
+-- red (sar -n DEV 5 1)
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+Average:      enp12s0      3.00      3.20      0.23      0.35      0.00      0.00      0.00      0.00
+Average:    wlp0s20f3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+-- procesos que más CPU usan
+%CPU   RSS COMMAND
+28.6 172260 Xorg
+19.9 145188 cursor
+15.8 372768 cursor
+12.5 214148 cinnamon
+ 7.4 433240 VirtualBoxVM
+ 7.1 24192 conky
+ 6.5 51348 VBoxSVC
+-- swap
+NAME       TYPE      SIZE  USED PRIO
+/swapfile  file        8G    0B   -2
+/dev/zram0 partition 7,8G 56,3M  100

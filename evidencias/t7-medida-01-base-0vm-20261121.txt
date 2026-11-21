@@ -1,0 +1,37 @@
+== 21/11/2026 22:24:27 Escenario: 0 VM (línea base, solo el escritorio de Ubuntu y VS Code) ==
+-- VM arrancadas
+-- free -m
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:           31811        7480       23397        1463        2866       24331
+Inter:         16144          56       16088
+-- vmstat 5 6
+procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+ r  b   swpd  libre   búf caché   si   so    bi    bo   in   cs us sy id wa st gu
+ 0  1  57600 23959124  52924 2882872    0    1  3677  4061 15472    9  2  1 96  0  0  1
+ 0  0  57600 23961076  52956 2884104    0    0     2   120 10605 18765  3  1 96  0  0  0
+ 1  0  57600 23987648  53004 2883672    0    0     6    87 10857 18735  3  1 96  0  0  0
+ 3  0  57600 23966372  53020 2907172    0    0     0    38 10540 18630  3  1 96  0  0  0
+ 0  0  57600 23991380  53036 2891860    0    0     0    53 10715 18866  3  1 96  0  0  0
+ 2  0  57600 24006564  53060 2881376    0    0     2    21 10960 18977  3  1 96  0  0  0
+-- mpstat 5 1 (resumen)
+Average:     all    3.14    0.00    0.86    0.15    0.00    0.01    0.00    0.00    0.00   95.84
+-- iostat -dx 5 2 (disco USB sda)
+Device            r/s     rkB/s   rrqm/s  %rrqm r_await rareq-sz     w/s     wkB/s   wrqm/s  %wrqm w_await wareq-sz     d/s     dkB/s   drqm/s  %drqm d_await dareq-sz     f/s f_await  aqu-sz  %util
+sda              0,00      0,00     0,00   0,00    0,00     0,00    2,40     21,60     2,40  50,00    0,83     9,00    0,00      0,00     0,00   0,00    0,00     0,00    0,80    1,25    0,00   0,12
+-- red (sar -n DEV 5 1)
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+Average:      enp12s0     12.40     12.20      4.26      3.95      0.00      0.00      0.00      0.00
+Average:    wlp0s20f3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+-- procesos que más CPU usan
+%CPU   RSS COMMAND
+28.7 167840 Xorg
+20.0 145320 cursor
+15.8 365476 cursor
+12.6 215448 cinnamon
+ 7.2 24192 conky
+ 2.7 318364 cursor
+-- swap
+NAME       TYPE      SIZE  USED PRIO
+/swapfile  file        8G    0B   -2
+/dev/zram0 partition 7,8G 56,3M  100

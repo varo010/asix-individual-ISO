@@ -8,7 +8,7 @@ RA: ISO RA1 (instalación y red), ISO RA3 (espacio de copias).
 - [x] Usuario(s) de administración.
 - [x] Parámetros de red de las interfaces.
 - [x] Disco adicional (o partición) para las copias de los equipos críticos.
-- [x] Preparar el espacio de copias y justificar qué se copia, cómo y dónde. *(Hecho para el MikroTik; faltan los demás equipos cuando estén instalados.)*
+- [x] Preparar el espacio de copias y justificar qué se copia, cómo y dónde. *(Todos los equipos críticos: routers, servidores, clientes y Proxmox.)*
 
 ## 1. Requisitos y VM
 
@@ -62,6 +62,10 @@ Cómo lo creé (**Credentials → Users → Add**):
 - **Allow Access**: solo **SSH Access**, con **Allow SSH Login with Password**. *Shell Access* se marca solo al elegir SSH y no se puede quitar.
 - **Home Directory**: `/mnt/copias/mikrotik`, la carpeta del dataset (punto 5).
 - **Groups**: TrueNAS crea un grupo `mikrotik` para él, como hace Linux normalmente.
+
+**Usuarios añadidos el 21/11**, uno por equipo y con la misma idea: `srv-dc`, `srv-linux`, `cli-win11`, `cli-linux` y `proxmox`. Cada uno con su *dataset* `copias/<nombre>` como carpeta personal. A estos **sí** les puse **clave SSH** (**Credentials → Users → Edit → Authorized Keys**): las copias son automáticas y así no hay ninguna contraseña guardada en los equipos. Estado leído por la API: [t5-truenas-18](<../evidencias/t5-truenas-18-estado-copias-api-20261121.txt>).
+
+**Zona horaria (21/11):** TrueNAS venía con `America/Los_Angeles` y los ficheros salían con 9 horas menos. La cambié a **`Europe/Madrid`** en **System → General Settings → Localization**: si las horas no coinciden, no se sabe qué copia es la más nueva.
 
 **Mejora posible:** TrueNAS avisa de que entrar por SSH con contraseña es *not recommended*. En una empresa se usaría una **clave SSH** en lugar de contraseña. En el laboratorio uso contraseña para que sea más sencillo.
 
@@ -135,7 +139,12 @@ Luego borré `prueba.txt`.
 | Router MikroTik | Backup completo y cifrado (`.backup`) y configuración en texto (`.rsc`) | Lo sube el propio router por SFTP con `/tool fetch` (detalle en [T5 comunicaciones](05-comunicaciones.md#copia-de-la-configuración)) | `copias/mikrotik` | Sin router no hay Internet ni DHCP en la LAN: es lo primero que hay que poder recuperar |
 | Router OPNsense | Configuración completa en XML **cifrado** | Se descarga con el navegador en `cli-linux` y se sube por SFTP con el usuario `opnsense` ([detalle](05-comunicaciones.md#copia-de-la-configuración-1)) | `copias/opnsense` | Igual que el MikroTik: es la salida a Internet de toda la LAN |
 | Router Debian + nftables | Paquete `.tar.gz` con sus 4 ficheros de configuración (reglas, DHCP, red e `ip_forward`) | Lo sube el propio router por SFTP con el usuario `nftables` ([detalle](05-comunicaciones.md#copia-de-la-configuración-2)) | `copias/nftables` | Igual que los otros routers: es la salida a Internet de toda la LAN |
-| Windows Server | Pendiente | | | |
+| `srv-dc` (Windows Server) | Base de datos del dominio, SYSVOL, GPO y usuarios (`.zip`) | Tarea programada diaria, por SFTP con **clave SSH** ([detalle](05-servidores.md)) | `copias/srv-dc` | Sin el dominio nadie puede iniciar sesión |
+| `srv-linux` | `/etc` y lista de paquetes (`.tar.gz`) | Temporizador de systemd diario, SFTP con clave | `copias/srv-linux` | Su configuración hecha a mano |
+| Clientes `cli-win11` y `cli-linux` | Documentos de los usuarios | Tarea/temporizador diario, SFTP con clave ([detalle](05-clientes.md)) | `copias/cli-win11`, `copias/cli-linux` | El trabajo de las personas |
+| Nodos Proxmox | Configuración del clúster y de cada nodo, e imagen del contenedor | Temporizador diario + `vzdump`, SFTP con clave ([detalle](05-proxmox.md#7-copias-del-clúster)) | `copias/proxmox` | Rehacer el clúster si cae un nodo |
+
+Resumen completo de todas las copias: [05-copias](05-copias.md).
 
 **Prueba de que la copia sirve:** borré la NAT del MikroTik y sus ficheros, bajé el backup desde este NAS y lo restauré. La LAN volvió a tener Internet ([fallo y recuperación](05-comunicaciones.md#fallo-y-recuperación)).
 

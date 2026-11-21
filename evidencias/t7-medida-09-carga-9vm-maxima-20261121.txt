@@ -1,0 +1,47 @@
+== 21/11/2026 22:07 Escenario: 9 VM + carga: migración en caliente de vm-debian (pve1 -> pve3), copias al NAS de srv-linux y cli-win11 a la vez ==
+-- VM arrancadas
+  r-nftables memory=1024 cpus=1 
+  nas-truenas memory=8192 cpus=2 
+  pve1 memory=4096 cpus=2 
+  pve2 memory=4096 cpus=2 
+  srv-dc memory=4096 cpus=2 
+  srv-linux memory=1024 cpus=1 
+  cli-win11 memory=4096 cpus=2 
+  cli-linux memory=4096 cpus=4 
+  pve3 memory=4096 cpus=2 
+-- free -m
+               total       usado       libre  compartido   búf/caché  disponible
+Mem:           31811       28197         762        1603        5001        3614
+Inter:         16144           0       16144
+-- vmstat 5 6
+procs -----------memory---------- ---swap-- -----io---- -system-- -------cpu-------
+ r  b   swpd  libre   búf caché   si   so    bi    bo   in   cs us sy id wa st gu
+ 2  0    512 781092 697524 4423616    0    0  3442  3839 15407    9  2  1 96  0  0  1
+13  0    512 399904 698260 4423036    0    0 48841  3642 34651 133335  3  2 87  1  0  8
+ 3  0    512 267872 698668 4398472    0    0 20499 12383 29224 77450  3  1 89  1  0  6
+ 3  0    512 284372 698756 4387264    0    0 99369 162237 38150 89346  5  2 87  0  0  6
+ 7  0    512 300120 699052 4380028    0    0 95304 162113 37087 86060  5  2 87  1  0  6
+ 1  0    512 255392 699164 4380188    0    0 96417 163760 37215 84894  5  2 86  0  0  7
+-- mpstat 5 1 (resumen)
+Average:     all    4.67    0.25    1.46    0.64    0.00    0.05    0.00    0.00    5.97   86.96
+-- iostat -dx 5 2 (disco USB sda)
+Device            r/s     rkB/s   rrqm/s  %rrqm r_await rareq-sz     w/s     wkB/s   wrqm/s  %wrqm w_await wareq-sz     d/s     dkB/s   drqm/s  %drqm d_await dareq-sz     f/s f_await  aqu-sz  %util
+sda             31,60    331,60     0,20   0,63    0,33    10,49   52,60    368,60    21,20  28,73    0,80     7,01    0,00      0,00     0,00   0,00    0,00     0,00    6,40    1,16    0,06   1,60
+-- red (sar -n DEV 5 1)
+Average:        IFACE   rxpck/s   txpck/s    rxkB/s    txkB/s   rxcmp/s   txcmp/s  rxmcst/s   %ifutil
+Average:      enp12s0     48.00     51.80     37.46     10.59      0.00      0.00      0.00      0.03
+Average:    wlp0s20f3      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+Average:      docker0      0.00      0.00      0.00      0.00      0.00      0.00      0.00      0.00
+-- procesos que más CPU usan
+%CPU   RSS COMMAND
+ 200  4792 ps
+70.9 1909432 VBoxHeadless
+45.0 2627876 VBoxHeadless
+43.6 345728 VBoxHeadless
+42.4 1969972 VBoxHeadless
+33.7 2701696 VBoxHeadless
+30.3 2036628 VBoxHeadless
+-- swap
+NAME       TYPE      SIZE USED PRIO
+/swapfile  file        8G   0B   -2
+/dev/zram0 partition 7,8G 1,5M  100

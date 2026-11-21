@@ -30,14 +30,14 @@ Discos **dinámicos**: el tamaño es el máximo, pero solo ocupan lo que se escr
 | `r-mikrotik` | Router alternativa 1 | MikroTik RouterOS CHR 7.24.6 | 1 | 256 MB | Imagen CHR (~128 MB) | NAT + LAN | Instalado y configurado (T5) |
 | `r-opnsense` | Router alternativa 2 | OPNsense 26.7 (actualizado a 26.7.9) | 2 | 2 GB | 20 GB | NAT + LAN | Instalado y configurado (T5) |
 | `r-nftables` | Router alternativa 3 | Debian 13.7 sin escritorio + nftables | 1 | 1 GB (512 MB no bastan para el instalador) | 8 GB | NAT + LAN | Instalada y configurada |
-| `nas-truenas` | NAS y copias | TrueNAS Community 25.10.8 | 2 | 8 GB | 20 GB sistema + 20 GB copias | LAN | Instalada; IP fija 192.168.27.10; ISO sacada |
-| `pve1` | Nodo Proxmox 1 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
-| `pve2` | Nodo Proxmox 2 | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
-| `pve3` | Nodo Proxmox 3 (añadido el 18/11) | Proxmox VE 9.2 | 2 | 4 GB | 32 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
-| `srv-dc` | Dominio | Windows Server 2025 (evaluación 180 días) | 2 | 4 GB | 50 GB | LAN | Instalándose |
-| `srv-linux` | Servidor de infraestructura (y RAID de la T6) | Debian 13.7 sin escritorio | 1 | 1 GB | 10 GB + 4 discos de 1 GB | LAN | Creada; ISO comprobada puesta; sin instalar |
-| `cli-win11` | Cliente Windows | Windows 11 Pro (ISO oficial en español, compilación 26300) | 2 | 4 GB | 64 GB (TPM 2.0, UEFI, Secure Boot) | LAN | Creada; ISO comprobada puesta; sin instalar |
-| `cli-linux` | Cliente GNU/Linux | Ubuntu Desktop 26.04.1 LTS | 4 | 4 GB (con 2 vCPU y 3 GB iba al 100 %) | 25 GB | LAN | Se usa en modo live (sin instalar) como cliente de pruebas |
+| `nas-truenas` | NAS y copias | TrueNAS Community 25.10.8 | 2 | 8 GB | 20 GB sistema + 20 GB copias | LAN | Instalada y configurada: IP fija .10, pool `copias` con una carpeta por equipo (T5) |
+| `pve1` | Nodo Proxmox 1 | Proxmox VE 9.2 (actualizado a 9.2.32) | 2 | 4 GB | 32 GB | LAN (tarjeta `virtio` desde el 21/11, ver [T7](07-rendimiento.md)) | Instalado; en el clúster `clusteriso` (T5) |
+| `pve2` | Nodo Proxmox 2 | Proxmox VE 9.2 (actualizado a 9.2.32) | 2 | 4 GB | 32 GB | LAN | Instalado; en el clúster `clusteriso` (T5) |
+| `pve3` | Nodo Proxmox 3 (añadido el 18/11) | Proxmox VE 9.2 (actualizado a 9.2.32) | 2 | 4 GB | 32 GB | LAN | Instalado; en el clúster `clusteriso` (T5) |
+| `srv-dc` | Dominio | Windows Server 2025 (evaluación 180 días) | 2 | 4 GB | 50 GB | LAN | Instalado y configurado: dominio `iso27.lan`, copias automáticas (T5) |
+| `srv-linux` | Servidor de infraestructura (y RAID de la T6) | Debian 13.7 sin escritorio | 1 | 1 GB | 10 GB + 7 discos de 1 GB (RAID) | LAN (tarjeta `virtio` desde el 21/11) | Instalado y configurado: IP fija .14, RAID 0/1/5 (T6), copias automáticas (T5) |
+| `cli-win11` | Cliente Windows | Windows 11 Pro (ISO oficial en español, compilación 26300) | 2 | 4 GB | 64 GB (TPM 2.0, UEFI, Secure Boot) | LAN | Instalado y configurado; copias automáticas (T5) |
+| `cli-linux` | Cliente GNU/Linux | Ubuntu Desktop 26.04.1 LTS | 4 | 4 GB (con 2 vCPU y 3 GB iba al 100 %) | 25 GB | LAN | Instalado (18/11) y configurado; copias automáticas (T5) |
 
 Total si estuvieran todas encendidas: **unos 36 GB de RAM y 21 vCPU**.
 

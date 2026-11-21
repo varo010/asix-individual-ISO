@@ -1,0 +1,16 @@
+== ANTES 21/11/2026 22:02 tarjeta de red emulada Intel PRO/1000 (82540EM) en srv-linux y pve1
+-- CPU de los procesos de las dos VM durante la prueba (pidstat 10 s; 100 % = 1 hilo entero)
+22:02:38      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+Average:      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+Average:     1000     44960   29.30   22.90   75.90    0.00  128.10     -  VirtualBoxVM
+Average:     1000     59305   53.20    4.80  176.30    0.00  234.30     -  VirtualBoxVM
+[  5]   0.00-20.00  sec  13.2 GBytes  5.65 Gbits/sec  81379            sender
+[  5]   0.00-20.00  sec  13.2 GBytes  5.65 Gbits/sec                  receiver
+== DESPUÉS 21/11/2026 22:05 tarjeta de red paravirtualizada (virtio-net) en srv-linux y pve1
+-- CPU de los procesos de las dos VM durante la prueba (pidstat 10 s; 100 % = 1 hilo entero)
+22:05:07      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+Average:      UID       PID    %usr %system  %guest   %wait    %CPU   CPU  Command
+Average:     1000     69702   66.10   23.70   92.60    0.00  182.40     -  VBoxHeadless
+Average:     1000     69791   36.80   29.60   80.50    0.00  146.90     -  VBoxHeadless
+[  5]   0.00-20.00  sec  24.2 GBytes  10.4 Gbits/sec  172745            sender
+[  5]   0.00-20.00  sec  24.2 GBytes  10.4 Gbits/sec                  receiver

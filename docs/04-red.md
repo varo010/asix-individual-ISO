@@ -6,8 +6,8 @@ RA: ISO RA1. Esquema de red de mi entorno, montaje en VirtualBox y direcciones.
 
 - [x] Dibujar el esquema de red individual, el montaje virtual y las direcciones previstas.
 - [x] Indicar la configuración de cada interfaz y la LAN 192.168.27.0/24 según mi puesto en el aula; la WAN por DHCP con NAT.
-- [ ] Ampliación: implementarlo y comprobar la conectividad con `ping`, `traceroute` y la tabla de rutas.
-- [ ] Ampliación: evidencias de `ping`, `traceroute`, rutas y configuración de interfaces entre VM y hacia el exterior.
+- [x] Ampliación: implementarlo y comprobar la conectividad con `ping`, `traceroute` y la tabla de rutas.
+- [x] Ampliación: evidencias de `ping`, `traceroute`, rutas y configuración de interfaces entre VM y hacia el exterior.
 
 > **XX = 27 → LAN 192.168.27.0/24.** En el aula mi portátil no tiene un puesto con número fijo: recibe la IP por DHCP. Uso el último número de la IP que tenía en la red del aula el 12/11/2026 (172.16.222.**27**, ver [inventario de clase](../evidencias/t2-inventario-clase-20261112.txt)). No coincide con las redes de los grupos (10, 20, 30 y 40).
 
@@ -97,8 +97,22 @@ Un cliente que abre una web: `cli-linux` (192.168.27.1xx) → router por `lan-is
 
 ## 6. Ampliación: verificación de la conectividad
 
-| Prueba | Desde | Hacia | Resultado | Evidencia |
+Hecha el 21/11 con el router `r-nftables` encendido (los otros dos routers se probaron igual en [T5 comunicaciones](05-comunicaciones.md)). Capturas: → [desde `srv-linux`](<../evidencias/t4-red-01-srvlinux-ip-rutas-ping-traceroute-20261121.png>) · [desde el router](<../evidencias/t4-red-02-router-interfaces-rutas-ping-20261121.png>)
+
+| Prueba | Desde | Hacia | Resultado | Qué demuestra |
 |---|---|---|---|---|
+| `ip -br a` | `srv-linux` | | `enp0s3` 192.168.27.14/24 | La IP fija del plan de direcciones |
+| `ip r` | `srv-linux` | | `default via 192.168.27.1` | Todo lo que no es de la LAN se manda al router |
+| `ping` | `srv-linux` | Router 192.168.27.1 | 0 % perdidos, 0,6 ms | La LAN funciona |
+| `ping` | `srv-linux` | NAS 192.168.27.10 | 0 % perdidos, 0,7 ms | Dos equipos de la LAN se ven entre sí |
+| `ping deb.debian.org` | `srv-linux` | Internet, por nombre | 0 % perdidos, 35 ms | Funcionan el DNS (el router responde) y la NAT |
+| `traceroute -n 9.9.9.9` | `srv-linux` | Internet | 1) 192.168.27.1 → 2) 10.0.2.2 → 3) 192.168.1.1 → … | El camino del punto 5: **mi router → NAT de VirtualBox → router de casa** → Internet. Se ve la **doble NAT** |
+| `ip -br a` | Router | | `enp0s3` 10.0.2.15/24 (WAN, DHCP) y `enp0s8` 192.168.27.1/24 (LAN) | Las dos patas del router, como en el punto 4 |
+| `ip r` | Router | | `default via 10.0.2.2 … proto dhcp` | La salida del router la da la NAT de VirtualBox por DHCP |
+| `cat /proc/sys/net/ipv4/ip_forward` | Router | | `1` | El router **reenvía** paquetes entre sus dos tarjetas (si fuera `0`, no haría de router) |
+| `ping` | Router | `srv-linux` (LAN) y 10.0.2.2 (WAN) | 0 % perdidos en los dos | El router llega a las dos redes |
+
+En el `traceroute` corté a 3 saltos: a partir del 4.º salen IP públicas de mi proveedor de Internet, que no se publican.
 
 ## 7. Comparación con la red del grupo
 
