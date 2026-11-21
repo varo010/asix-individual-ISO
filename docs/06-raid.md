@@ -6,9 +6,9 @@ RA: ISO RA3. Con discos virtuales y datos ficticios.
 
 - [x] Crear y verificar al menos tres tipos de RAID.
 - [x] Explicar qué aporta cada tipo.
-- [ ] Ampliación: investigar y justificar un espejo entre discos de dos equipos distintos.
-- [ ] Ampliación: implementarlo con la solución de replicación o almacenamiento distribuido elegida.
-- [ ] Ampliación: verificar el funcionamiento y explicar un caso de uso.
+- [x] Ampliación: investigar y justificar un espejo entre discos de dos equipos distintos.
+- [x] Ampliación: implementarlo con la solución de replicación o almacenamiento distribuido elegida.
+- [x] Ampliación: verificar el funcionamiento y explicar un caso de uso.
 
 ## 0. Qué es un RAID
 
@@ -20,7 +20,7 @@ Un **RAID** junta varios discos para que el sistema los vea como **uno solo**. S
 
 | VM | SO | Discos virtuales añadidos | Herramienta |
 |---|---|---|---|
-| `srv-linux` | Debian 13.7 sin escritorio | **7 discos de 1 GB** (`sdb` … `sdh`): 4 creados el 15/11 y 3 más el 21/11 | `mdadm` 4.4 |
+| `srv-linux` | Debian 13.7 sin escritorio | **7 discos de 1 GB** (`sdb` … `sdh`): 4 creados el 15/11 y 3 más el 21/11. Uno más para el espejo del apartado 4 | `mdadm` 4.4 |
 
 Hacen falta 7 discos para tener los tres RAID **a la vez**: 2 (RAID 0) + 2 (RAID 1) + 3 (RAID 5). Los 3 discos nuevos se añadieron con la VM apagada:
 
@@ -103,8 +103,92 @@ El RAID **se reconstruye solo** (`recovery`) y en menos de 25 segundos vuelve a 
 
 ## 4. Ampliación: espejo entre dos equipos
 
-> Pendiente.
+**La idea:** un RAID 1 normal protege de que se rompa **un disco**, pero si se rompe **el servidor entero** (placa, fuente, o se apaga), los dos discos se quedan dentro y no hay datos. Un **espejo entre dos equipos** guarda una copia exacta en **otro ordenador** a la vez, por la red.
 
 ### Opciones investigadas
+
+| Opción | Cómo funciona | A favor | En contra | ¿La elijo? |
+|---|---|---|---|---|
+| **DRBD** | Un «RAID 1 por la red»: cada escritura se hace en el disco local **y** en el del otro equipo antes de darla por buena | Viene en el núcleo de Linux; es lo que usa Proxmox y muchas empresas para alta disponibilidad con 2 servidores | Solo un equipo puede usar los datos a la vez (el *primario*) | **Sí** |
+| `mdadm` RAID 1 + disco remoto por iSCSI/NBD | Se presta un disco del otro equipo por la red y se hace un RAID 1 normal con él | Usa lo mismo que el apartado 2 | Si cae la red, `mdadm` marca el disco como roto y hay que reconstruirlo **entero** | No |
+| **GlusterFS / Ceph** | Almacenamiento distribuido entre 3 o más equipos | Varios equipos usan los datos a la vez; crece añadiendo equipos | Necesita 3 equipos o más y mucha RAM. Demasiado para el portátil ([T7](07-rendimiento.md)) | No |
+| **`rsync` / replicación ZFS programada** | Copia cada cierto tiempo | Muy sencillo | **No es un espejo**: se pierde lo escrito desde la última copia | No |
+
+**Por qué DRBD:** es un espejo de verdad (no se pierde nada escrito), funciona con **solo 2 equipos** y solo vuelve a copiar **lo que ha cambiado** cuando un equipo vuelve.
+
 ### Implementación
-### Verificación y caso de uso
+
+| | `srv-linux` | `cli-linux` |
+|---|---|---|
+| Disco nuevo | 1 GB (añadido con la VM apagada) | 1 GB (añadido con la VM apagada) |
+| Programa | `drbd-utils` (DRBD 8.4.11 del núcleo) | `drbd-utils` (DRBD 8.4.11 del núcleo) |
+| IP y puerto | 192.168.27.14:7789 | 192.168.27.136:7789 |
+| Papel al empezar | **Primario** (usa los datos) | **Secundario** (recibe la copia) |
+
+Fichero `/etc/drbd.d/espejo.res`, **igual en los dos equipos**:
+
+```
+resource espejo {
+  protocol C;
+  disk { c-plan-ahead 0; resync-rate 100M; }
+  device    /dev/drbd0;
+  meta-disk internal;
+  on srv-linux {
+    disk    /dev/disk/by-id/ata-VBOX_HARDDISK_VB7a805efa-e21ed0c0;
+    address 192.168.27.14:7789;
+  }
+  on cli-linux {
+    disk    /dev/disk/by-id/ata-VBOX_HARDDISK_VB57eb120f-6f57ee3b;
+    address 192.168.27.136:7789;
+  }
+}
+```
+
+| Línea | Qué significa |
+|---|---|
+| `protocol C` | Una escritura **no se da por terminada** hasta que está en los **dos** discos. Es el modo seguro: si cae un equipo, el otro tiene todo |
+| `device /dev/drbd0` | El disco «espejo» que se usa (se formatea y se monta como cualquier disco) |
+| `disk /dev/disk/by-id/…` | El disco real de cada equipo, por su **número de serie** y no por la letra (`sdh`), que cambia al reiniciar (lo vimos en el apartado 2) |
+| `meta-disk internal` | DRBD guarda sus datos de control al final del mismo disco |
+| `resync-rate 100M` | **Problema:** la primera sincronización iba a **364 KB/s (43 minutos)** por el límite que trae de serie. Subiendo el límite tardó **menos de 2 minutos** |
+
+**Órdenes** (en los dos equipos, salvo lo marcado):
+
+```
+sudo apt install drbd-utils
+sudo drbdadm create-md espejo        # prepara el disco
+sudo drbdadm up espejo               # lo activa y se conecta con el otro equipo
+# solo en srv-linux, la primera vez:
+sudo drbdadm primary --force espejo  # «mis datos son los buenos»: copia al otro
+sudo mkfs.ext4 -L espejo /dev/drbd0
+sudo mount /dev/drbd0 /srv/espejo
+```
+
+`cat /proc/drbd` o `drbdadm status` enseñan el estado: `Connected` (los dos se ven), `Primary/Secondary` (quién usa los datos) y `UpToDate/UpToDate` (los dos discos iguales). → [captura](<../evidencias/t6-espejo-01-drbd-sincronizado-datos-en-srvlinux-20261121.png>)
+
+Datos de prueba: los mismos tres ficheros de 20 MB que en el apartado 2, más `leeme.txt`, con sus huellas SHA256.
+
+### Verificación: se cae el servidor entero
+
+| Hora | Qué hice | Resultado | Evidencia |
+|---|---|---|---|
+| 22:39 | Datos escritos en `srv-linux` (primario) | Los dos discos `UpToDate` | [captura](<../evidencias/t6-espejo-01-drbd-sincronizado-datos-en-srvlinux-20261121.png>) |
+| 22:40:10 | **Apago `srv-linux` de golpe** (`VBoxManage controlvm srv-linux poweroff`, como quitarle el cable) | En `cli-linux`: `WFConnection` (espera al otro), pero su disco sigue `UpToDate` | |
+| 22:40:28 | En `cli-linux`: `drbdadm primary espejo` y `mount` | **Los datos están todos** y las 4 huellas dan `OK`. El cambio de equipo tarda **menos de 1 segundo** (los 18 s anteriores son lo que tardé en escribir las órdenes) | [captura](<../evidencias/t6-espejo-02-srvlinux-caido-datos-en-clilinux-20261121.png>) |
+| 22:40 | Mientras `srv-linux` está caído, se escribe `pedido-nuevo.txt` en `cli-linux`. Lo desmonto y lo dejo como secundario | | |
+| 22:41 | Enciendo `srv-linux` y `drbdadm up espejo` | DRBD sabe qué ha cambiado y **solo copia eso** (116 MB, no el disco entero) | |
+| 22:45 | `srv-linux` vuelve a ser primario | Tiene el `pedido-nuevo.txt` escrito mientras estaba apagado, y las huellas coinciden | [captura](<../evidencias/t6-espejo-03-srvlinux-vuelve-y-recibe-cambios-20261121.png>) |
+
+**No se monta solo al arrancar** (no está en `/etc/fstab` y el servicio `drbd` está desactivado) **a propósito**: si los dos equipos se pusieran como primario a la vez, cada uno escribiría cosas distintas (*split brain*, el mismo problema que evita el quórum de [Proxmox](05-proxmox.md#prueba-de-quórum)). Decidir quién es el primario lo hace una persona o un programa de alta disponibilidad (Pacemaker).
+
+### Caso de uso
+
+**Servidor de ficheros de una oficina con dos servidores.** Los documentos de la empresa están en un espejo DRBD entre el servidor principal y uno de reserva, en **otra sala**. Si el principal se estropea (placa, fuente, incendio en esa sala), el de reserva se pone como primario y en un minuto la oficina vuelve a tener sus documentos, **sin perder nada** de lo escrito hasta el último segundo.
+
+| | RAID 1 (apartado 2) | Espejo DRBD | Copia en el NAS ([05-copias](05-copias.md)) |
+|---|---|---|---|
+| Se rompe un disco | ✅ | ✅ | ✅ (pierde lo del último día) |
+| Se rompe el servidor entero | ❌ | ✅ | ✅ (pierde lo del último día) |
+| Borro un fichero sin querer / virus | ❌ (se borra en los dos) | ❌ (se borra en los dos) | ✅ |
+
+**Por eso el espejo tampoco sustituye a las copias:** protege de averías, no de errores ni de virus.

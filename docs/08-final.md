@@ -1,6 +1,6 @@
 # T8 · Preparación de la prueba final individual (25-11-2026)
 
-El profesorado plantea un caso sobre mi entorno. Esta página reúne lo que necesito tener a mano.
+El profesorado plantea un caso sobre mi entorno. Esta página reúne lo que necesito tener a mano. Repaso de cada VM: [09-resumen-por-vm](09-resumen-por-vm.md).
 
 ## Qué se evaluará (según la rúbrica)
 

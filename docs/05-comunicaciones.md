@@ -4,9 +4,17 @@ RA: ISO RA1 (instalación, red, filtrado), ISO RA3 (copia y recuperación), ISO 
 
 ## Comprobaciones generales (todas las VM de la T5)
 
-- [ ] Requisitos y origen de las imágenes (arquitectura, fuente fiable); integridad verificada cuando el fabricante publique el hash.
-- [ ] Actualizar y comprobar el funcionamiento antes de ponerlo «en producción».
-- [ ] Identificar problemas posibles, configuraciones críticas y tiempo de respuesta ante una incidencia de instalación o arranque.
+- [x] Requisitos y origen de las imágenes (arquitectura, fuente fiable); integridad verificada cuando el fabricante publique el hash.
+- [x] Actualizar y comprobar el funcionamiento antes de ponerlo «en producción».
+- [x] Identificar problemas posibles, configuraciones críticas y tiempo de respuesta ante una incidencia de instalación o arranque.
+
+**Resumen de las tres comprobaciones** (sirve para todas las VM de la T5):
+
+| Comprobación | Dónde está |
+|---|---|
+| **Imágenes:** todas de la web oficial, 64 bits, y con la huella SHA256 comparada con la del fabricante (tabla de abajo y [00-entorno](00-entorno.md)). Única excepción: Windows Server, porque Microsoft no publica la huella | Tabla de abajo · [t5-isos-sha256](../evidencias/t5-isos-sha256-20261116.txt) |
+| **Actualizar antes de usar:** OPNsense (96 paquetes → 26.7.9), Proxmox (225 paquetes → 9.2.32), `r-nftables` (20 paquetes) y `srv-linux` (31 paquetes), con `apt` y el repositorio de seguridad de Debian; Windows por Windows Update | Este documento · [05-proxmox](05-proxmox.md#2-instalación) · [05-servidores](05-servidores.md) |
+| **Problemas, configuración crítica y tiempo de respuesta:** cada sistema tiene su apartado *Problema* y su prueba de **fallo provocado y recuperación** desde la copia del NAS, con el tiempo medido (MikroTik, OPNsense y nftables aquí; `srv-linux` 32 s; `cli-win11` 4 s; `cli-linux` menos de 1 s) | Apartados *Fallo y recuperación* · [05-copias](05-copias.md#1-inventario-de-copias) |
 
 | Sistema | Versión | Origen (URL oficial) | Hash publicado | Hash comprobado | Fecha |
 |---|---|---|---|---|---|

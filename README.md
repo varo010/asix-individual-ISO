@@ -20,13 +20,13 @@ Estados: Pendiente · En curso · Hecho · Simulado.
 | T0 · Entorno de pruebas | Montar mi entorno y justificar sus límites. Ampliación: documentarlo en Git | [00-entorno](docs/00-entorno.md) | FDM RA1 | Hecho: diseñado, 11 VM creadas con sus ISO comprobadas (`pve3` añadida el 18/11), repo en GitHub. Incidencia [INC-01](incidencias/INC-01-virtualbox-secure-boot-casa.md) cerrada |
 | T2 · Equipos | Inventario y comparativa del equipo de clase y el de casa; cuellos de botella. Ampliación: tests de memoria, disco y red | [02-equipos](docs/02-equipos.md) | FDM RA1 | Hecho, con ampliación (tests en los dos equipos) |
 | T4 · Red | Esquema de red y montaje en VirtualBox. Ampliación: implementarlo y verificarlo | [04-red](docs/04-red.md) | ISO RA1 | Hecho, con ampliación (red implementada y comprobada con `ping`, `traceroute` y rutas) |
-| T5 · Comunicaciones | MikroTik, OPNsense y Debian con nftables | [05-comunicaciones](docs/05-comunicaciones.md) | ISO RA1, RA3, RA6 | Terminada: los tres routers (red, DHCP, DNS, NAT, cortafuegos con registro, copia en el NAS y recuperación). Falta la comparación final |
+| T5 · Comunicaciones | MikroTik, OPNsense y Debian con nftables | [05-comunicaciones](docs/05-comunicaciones.md) | ISO RA1, RA3, RA6 | Terminada: los tres routers (red, DHCP, DNS, NAT, cortafuegos con registro, copia en el NAS y recuperación) y comparación de las tres soluciones |
 | T5 · Datos | TrueNAS como servidor de copias | [05-truenas](docs/05-truenas.md) | ISO RA1, RA3 | Hecho: instalado, IP fija, pool `copias` con una carpeta y un usuario por equipo (routers, servidores, clientes y Proxmox) |
 | T5 · Virtualización | Clúster Proxmox y migración medida | [05-proxmox](docs/05-proxmox.md) | ISO RA1, RA6 | Hecho: clúster de 3 nodos con quórum probado, contenedor y VM migrados y medidos, copias al NAS |
 | T5 · Servidores | Windows Server 2025 y servidor GNU/Linux | [05-servidores](docs/05-servidores.md) | ISO RA1, RA3 | Hecho: dominio `iso27.lan` y Debian, con copias automáticas y recuperación probada |
 | T5 · Clientes | Windows 11 y GNU/Linux | [05-clientes](docs/05-clientes.md) | ISO RA1, RA3 | Hecho: Windows 11 y Ubuntu, con copias automáticas y recuperación probada |
 | T5 · Copias | Qué se copia, cómo y dónde. Ampliación: automatizarlo | [05-copias](docs/05-copias.md) | ISO RA3 | Hecho, con ampliación (copias automáticas diarias) |
-| T6 · RAID | 3 tipos de RAID. Ampliación: espejo entre dos equipos | [06-raid](docs/06-raid.md) | ISO RA3 | Obligatorio hecho (RAID 0, 1 y 5 con fallos probados); ampliación pendiente |
+| T6 · RAID | 3 tipos de RAID. Ampliación: espejo entre dos equipos | [06-raid](docs/06-raid.md) | ISO RA3 | Hecho, con ampliación (espejo DRBD entre `srv-linux` y `cli-linux`, probado apagando un equipo) |
 | T7 · Rendimiento | Qué satura cada VM y cuántas puedo usar a la vez. Ampliación: 2 optimizaciones | [07-rendimiento](docs/07-rendimiento.md) | FDM RA1, ISO RA6 | Hecho, con ampliación (2 optimizaciones medidas) |
 | T8 · Final | Caso práctico el 25-11 sobre este entorno | [08-final](docs/08-final.md) | Todos | Pendiente |
 
@@ -37,6 +37,7 @@ Estados: Pendiente · En curso · Hecho · Simulado.
 - [evidencias/](evidencias/) — salidas de comandos y capturas, sin contraseñas
 - [incidencias/](incidencias/) — problemas encontrados y cómo se resolvieron
 - [docs/preguntas.md](docs/preguntas.md) — preguntas de la defensa
+- [docs/09-resumen-por-vm.md](docs/09-resumen-por-vm.md) — qué hay en cada VM y cómo explicarlo (repaso para la defensa)
 
 ## Normas
 
