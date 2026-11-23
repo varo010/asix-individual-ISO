@@ -136,6 +136,8 @@ Resultado: **3 nodos, 3 votos, quórum 2, `Quorate`** (= tiene quórum). → [ca
 
 ## 5. Contenedor y VM de prueba
 
+> **Cambio del 23/11 (a petición del profesorado):** el contenedor `100` y la VM `101` ya **no existen**: los borré de Proxmox (`pct destroy 100 --purge`, `qm destroy 101 --purge`). Los tres nodos se quedan **solo para demostrar el clúster** (crearlo, el quórum y la migración). Las dos máquinas Debian ahora son **VM independientes de VirtualBox**, `srv-debian1` (.20) y `srv-debian2` (.21), porque no tiene sentido meter una máquina dentro de otra máquina virtual ([apartado 5 bis](#5-bis-las-dos-máquinas-independientes-srv-debian1-y-srv-debian2)). Este apartado y el 6 se quedan como **registro de la prueba** que se hizo el 21/11.
+
 → [captura](<../evidencias/t5-proxmox-07-contenedor-y-vm-sin-escritorio-20261121.png>)
 
 | | Contenedor `100 ct-debian` | VM `101 vm-debian` |
@@ -157,8 +159,33 @@ qm set 101 --ide2 local-lvm:cloudinit --ciuser alvaro --ipconfig0 ip=192.168.27.
 
 - **Contenedor sin privilegios** (`--unprivileged 1`): el `root` de dentro del contenedor **no** es el `root` del nodo. Si alguien entra en el contenedor, no controla el servidor.
 - **`nesting=1`:** Proxmox avisó `Systemd 257 detected. You may need to enable nesting`. Debian 13 lo necesita para que algunos servicios funcionen bien dentro del contenedor; lo activé con `pct set 100 --features nesting=1`.
-- **Cada una en su propio nodo (23/11, a petición del profesorado):** el contenedor vive en **`pve2`** y la VM en **`pve3`**, y cada una funciona por su cuenta. Las dos tienen **«Start at boot»** activado (`pct set 100 --onboot 1`, `qm set 101 --onboot 1`): al encender su nodo, arrancan solas.
 - **Imagen *cloud* + *cloud-init*:** en vez de instalar Debian paso a paso, se usa una imagen ya instalada y *cloud-init* le pone al arrancar el usuario, la clave SSH y la IP. Es como se crean los servidores en la nube.
+
+## 5 bis. Las dos máquinas independientes: `srv-debian1` y `srv-debian2`
+
+Creadas el 23/11 en VirtualBox, en el grupo `ISO-individual`, al lado de las demás (no dentro de Proxmox).
+
+| | `srv-debian1` | `srv-debian2` |
+|---|---|---|
+| Sistema | Debian 13.8 sin escritorio | Debian 13.8 sin escritorio |
+| Recursos | 1 vCPU, 1 GB, disco 10 GB | 1 vCPU, 1 GB, disco 10 GB |
+| Red | `lan-iso`, tarjeta `virtio`, IP fija **192.168.27.20** | `lan-iso`, tarjeta `virtio`, IP fija **192.168.27.21** |
+| Usuario | `alvaro` con `sudo`, `root` bloqueado | igual |
+| Programas | SSH y `sudo` | igual |
+
+**Cómo se hicieron:**
+
+1. Con `VBoxManage createvm` y `modifyvm` se crea el «hardware» (como las demás VM).
+2. La instalación de Debian se hizo **desatendida**: VirtualBox le pasa al instalador un **fichero de respuestas** (*preseed*) con el idioma, el teclado español, el usuario `alvaro`, la partición del disco y los paquetes (SSH y `sudo`). Así el instalador no pregunta nada. Es lo mismo que se hace en una empresa para instalar muchos equipos iguales.
+3. Después, por SSH: IP fija en `/etc/network/interfaces` (puerta de enlace y DNS el router .1), teclado `es`, `passwd -l root` y `apt update && apt full-upgrade`.
+
+**Problemas encontrados:**
+
+- Al instalar las dos a la vez, `srv-debian1` no consiguió IP por DHCP y el instalador se paró. Reiniciando la VM, la instalación salió bien.
+- El fichero de respuestas dejó el teclado en `us`: se cambió a `es` en `/etc/default/keyboard` y `setupcon`.
+- Al pasar de DHCP a IP fija, el programa de DHCP del instalador (`dhcpcd`) **vació `/etc/resolv.conf`** al cerrarse: había red (`ping 192.168.27.1` iba) pero no resolvía nombres (`apt update` fallaba). Solución: escribir `nameserver 192.168.27.1` en `/etc/resolv.conf` y quitar `dhcpcd-base`, que ya no hace falta. Comprobado después de reiniciar.
+
+**Comprobación:** `ip -br a` (IP .20 / .21), `ip r` (ruta por defecto por .1), `getent hosts deb.debian.org` (DNS) y `apt update` sin errores.
 
 ## 6. Migración medida
 
@@ -197,7 +224,7 @@ qm migrate 101 pve2 --online --with-local-disks  # VM
 | No se copia | Por qué |
 |---|---|
 | Proxmox (el sistema) | Se reinstala desde la ISO en 10 minutos |
-| La VM de prueba | Se vuelve a crear desde la imagen *cloud* con 4 órdenes |
+| La VM de prueba (ya borrada) | Se volvía a crear desde la imagen *cloud* con 4 órdenes |
 | Plantillas e imágenes descargadas | Se vuelven a descargar de los sitios oficiales |
 
 **Problema encontrado:** al mirar los ficheros en el NAS salían con **hora de las 12:55** cuando eran las 21:55. TrueNAS tenía la zona horaria `America/Los_Angeles` (la que trae de serie). La cambié a `Europe/Madrid` (**System → General Settings → Localization**). Es importante: si las horas no coinciden, no se sabe qué copia es la buena.

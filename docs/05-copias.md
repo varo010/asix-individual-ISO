@@ -25,7 +25,7 @@ RA: ISO RA3. Resumen de todas las copias y, como ampliación, su automatización
 | `cli-win11` | Documentos, Escritorio, Imágenes | `.zip` | `copias/cli-win11` | **Diaria 13:00, automática** | Tarea `Recuperar ultima copia` | ✅ 4 s · [05-clientes](05-clientes.md#copias) |
 | `cli-linux` | `/home` + `/etc` + lista de paquetes | `.tar.gz` (1,4 MB) | `copias/cli-linux` | **Diaria 13:00, automática** | `sftp get` + `tar xzf … -C /` | ✅ < 1 s · [05-clientes](05-clientes.md#copias-1) |
 | Nodos Proxmox (`pve1-3`) | Configuración del clúster (`/etc/pve`), red, Corosync y repositorios de cada nodo | `.tar.gz` (24 KB por nodo) | `copias/proxmox` | **Diaria 03:00, automática** | Reinstalar Proxmox desde la ISO y devolver los ficheros | Copia comprobada en el NAS · [05-proxmox](05-proxmox.md#7-copias-del-clúster) |
-| Contenedor `ct-debian` | Imagen completa (`vzdump`) | `.tar.zst` (159 MB) | `copias/proxmox` | Una vez, a mano | `pct restore` | Copia comprobada en el NAS |
+| Contenedor `ct-debian` (borrado el 23/11) | Imagen completa (`vzdump`) | `.tar.zst` (159 MB) | `copias/proxmox` | Una vez, a mano | `pct restore` | Copia comprobada en el NAS |
 
 Estado del NAS leído por su API (datasets, usuarios y ficheros): → [t5-truenas-18-estado-copias-api-20261121.txt](<../evidencias/t5-truenas-18-estado-copias-api-20261121.txt>)
 
