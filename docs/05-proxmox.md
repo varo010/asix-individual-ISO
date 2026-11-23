@@ -157,6 +157,7 @@ qm set 101 --ide2 local-lvm:cloudinit --ciuser alvaro --ipconfig0 ip=192.168.27.
 
 - **Contenedor sin privilegios** (`--unprivileged 1`): el `root` de dentro del contenedor **no** es el `root` del nodo. Si alguien entra en el contenedor, no controla el servidor.
 - **`nesting=1`:** Proxmox avisó `Systemd 257 detected. You may need to enable nesting`. Debian 13 lo necesita para que algunos servicios funcionen bien dentro del contenedor; lo activé con `pct set 100 --features nesting=1`.
+- **Cada una en su propio nodo (23/11, a petición del profesorado):** el contenedor vive en **`pve2`** y la VM en **`pve3`**, y cada una funciona por su cuenta. Las dos tienen **«Start at boot»** activado (`pct set 100 --onboot 1`, `qm set 101 --onboot 1`): al encender su nodo, arrancan solas.
 - **Imagen *cloud* + *cloud-init*:** en vez de instalar Debian paso a paso, se usa una imagen ya instalada y *cloud-init* le pone al arrancar el usuario, la clave SSH y la IP. Es como se crean los servidores en la nube.
 
 ## 6. Migración medida
