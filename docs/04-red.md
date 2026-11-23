@@ -36,8 +36,8 @@ flowchart TB
     LAN --- SL["srv-linux · .14"]
     LAN --- W["cli-win11<br/>DHCP .100–.199"]
     LAN --- U["cli-linux<br/>DHCP .100–.199"]
-    LAN --- D1["srv-debian1 · .20"]
-    LAN --- D2["srv-debian2 · .21"]
+    LAN --- D1["dades · .20"]
+    LAN --- D2["serveis · .21"]
 ```
 
 ## 2. Redes de VirtualBox
@@ -66,7 +66,7 @@ LAN: 192.168.27.0/24 · máscara 255.255.255.0 · difusión 192.168.27.255.
 |---|---|---|
 | .1 | Router activo (puerta de enlace) | Fija |
 | .10 – .19 | Servidores | Fija |
-| .20 – .29 | Debian independientes (`srv-debian1` .20, `srv-debian2` .21). Antes: el contenedor y la VM de prueba de Proxmox | Fija |
+| .20 – .29 | Debian independientes (`dades` .20, `serveis` .21). Antes: el contenedor y la VM de prueba de Proxmox | Fija |
 | .100 – .199 | Clientes | DHCP del router |
 | Resto | Libre | — |
 
