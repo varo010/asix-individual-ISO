@@ -154,7 +154,13 @@ iso27.lan
 | `Access is denied` al borrar la carpeta temporal | La copia de `SYSVOL` mantiene sus permisos especiales | `takeown` + `icacls /reset` antes de borrar |
 | `UNPROTECTED PRIVATE KEY FILE` | El SSH de Windows se niega a usar una clave privada que puedan leer otros usuarios | La clave solo es de `SYSTEM` (`icacls … /setowner SYSTEM` y quitar el resto de permisos) |
 
-**Cómo se restauraría:** reinstalar Windows Server, ponerle la misma IP y nombre, y crear el DC con `Install-ADDSForest` **desde el medio** de la copia (`-InstallationMediaPath`) o, para un usuario o una GPO concreta, sacarlos de la copia (`Restore-GPO`). Para borrados de usuarios del día a día, lo más rápido es la **papelera de reciclaje de AD**.
+**Cómo se restauraría** (qué sirve para cada caso):
+
+| Qué se ha roto | Cómo se arregla con la copia |
+|---|---|
+| Una **GPO** borrada o estropeada | Sacar la carpeta `GPO` del `.zip` y **Group Policy Management → Group Policy Objects → Manage Backups → Restore** (o `Restore-GPO -Name "…" -Path …`). Si se borró, se vuelve a crear; después hay que volver a **enlazarla** a su OU |
+| Un **usuario** borrado | Volver a crearlo con los datos de la lista CSV (la contraseña se pone nueva) |
+| **Todo el servidor** | **Limitación:** la copia IFM sirve para crear un **segundo** controlador del mismo dominio, no para resucitar el único que hay. Para eso haría falta una copia del **estado del sistema** (*System State*, con Copias de seguridad de Windows Server: `wbadmin start systemstatebackup`), que ocupa varios GB. Con un solo DC, lo que de verdad protege el dominio es tener **un segundo controlador de dominio** |
 
 ### Qué es un dominio y qué aporta a la empresa
 
