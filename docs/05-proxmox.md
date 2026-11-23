@@ -136,7 +136,7 @@ Resultado: **3 nodos, 3 votos, quórum 2, `Quorate`** (= tiene quórum). → [ca
 
 ## 5. Contenedor y VM de prueba
 
-> **Cambio del 23/11 (a petición del profesorado):** el contenedor `100` y la VM `101` ya **no existen**: los borré de Proxmox (`pct destroy 100 --purge`, `qm destroy 101 --purge`). Los tres nodos se quedan **solo para demostrar el clúster** (crearlo, el quórum y la migración). Las dos máquinas Debian ahora son **VM independientes de VirtualBox**, `dades` (.20) y `serveis` (.21), porque no tiene sentido meter una máquina dentro de otra máquina virtual ([apartado 5 bis](#5-bis-las-dos-máquinas-independientes-dades-y-serveis)). Este apartado y el 6 se quedan como **registro de la prueba** que se hizo el 21/11.
+> **Cambio del 23/11 (a petición del profesorado):** el contenedor `100` y la VM `101` ya **no existen**: los borré de Proxmox (`pct destroy 100 --purge`, `qm destroy 101 --purge`). Los tres nodos se quedan **solo para demostrar el clúster** (crearlo, el quórum y la migración). Las dos máquinas Debian ahora son **VM independientes de VirtualBox**, `srv-dades` (.20) y `srv-serveis` (.21), porque no tiene sentido meter una máquina dentro de otra máquina virtual ([apartado 5 bis](#5-bis-las-dos-máquinas-independientes-srv-dades-y-srv-serveis)). Este apartado y el 6 se quedan como **registro de la prueba** que se hizo el 21/11.
 
 → [captura](<../evidencias/t5-proxmox-07-contenedor-y-vm-sin-escritorio-20261121.png>)
 
@@ -161,14 +161,14 @@ qm set 101 --ide2 local-lvm:cloudinit --ciuser alvaro --ipconfig0 ip=192.168.27.
 - **`nesting=1`:** Proxmox avisó `Systemd 257 detected. You may need to enable nesting`. Debian 13 lo necesita para que algunos servicios funcionen bien dentro del contenedor; lo activé con `pct set 100 --features nesting=1`.
 - **Imagen *cloud* + *cloud-init*:** en vez de instalar Debian paso a paso, se usa una imagen ya instalada y *cloud-init* le pone al arrancar el usuario, la clave SSH y la IP. Es como se crean los servidores en la nube.
 
-## 5 bis. Las dos máquinas independientes: `dades` y `serveis`
+## 5 bis. Las dos máquinas independientes: `srv-dades` y `srv-serveis`
 
 Creadas el 23/11 en VirtualBox, en el grupo `ISO-individual`, al lado de las demás (no dentro de Proxmox).
 
-| | `dades` | `serveis` |
+| | `srv-dades` | `srv-serveis` |
 |---|---|---|
 | Sistema | Debian 13.8 sin escritorio | Debian 13.8 sin escritorio |
-| Recursos | 1 vCPU, 1 GB, disco 10 GB | 1 vCPU, 1 GB, disco 10 GB |
+| Recursos | 1 vCPU, 1 GB, disco 10 GB + 3 de 1 GB (RAID 5, ver [T6](06-raid.md)) | 1 vCPU, 1 GB, disco 10 GB + 2 de 1 GB (RAID 1) |
 | Red | `lan-iso`, tarjeta `virtio`, IP fija **192.168.27.20** | `lan-iso`, tarjeta `virtio`, IP fija **192.168.27.21** |
 | Usuario | `alvaro` con `sudo`, `root` bloqueado | igual |
 | Programas | SSH y `sudo` | igual |
@@ -181,7 +181,7 @@ Creadas el 23/11 en VirtualBox, en el grupo `ISO-individual`, al lado de las dem
 
 **Problemas encontrados:**
 
-- Al instalar las dos a la vez, `dades` no consiguió IP por DHCP y el instalador se paró. Reiniciando la VM, la instalación salió bien.
+- Al instalar las dos a la vez, `srv-dades` no consiguió IP por DHCP y el instalador se paró. Reiniciando la VM, la instalación salió bien.
 - El fichero de respuestas dejó el teclado en `us`: se cambió a `es` en `/etc/default/keyboard` y `setupcon`.
 - Al pasar de DHCP a IP fija, el programa de DHCP del instalador (`dhcpcd`) **vació `/etc/resolv.conf`** al cerrarse: había red (`ping 192.168.27.1` iba) pero no resolvía nombres (`apt update` fallaba). Solución: escribir `nameserver 192.168.27.1` en `/etc/resolv.conf` y quitar `dhcpcd-base`, que ya no hace falta. Comprobado después de reiniciar.
 

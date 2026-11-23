@@ -14,12 +14,12 @@ Una ficha por máquina, para repasar antes de la defensa (23-11) y de la prueba 
    │  LAN 192.168.27.1           │  DHCP .100-.199 · DNS · NAT · cortafuegos
    └──────────────┬──────────────┘
                   │  red interna lan-iso (192.168.27.0/24)
-   ┌──────┬───────┼────────┬────────────┬───────────┬─────────┬──────────┐
-  NAS   srv-dc  srv-linux  pve1-3     dades/serveis  cli-win11  cli-linux
-  .10    .13      .14     .11/.12/.15     .20/.21       DHCP       DHCP
+   ┌──────┬───────┼────────┬────────────┬───────────────┬─────────┬──────────┐
+  NAS   srv-dc  srv-linux  pve1-3     srv-dades/srv-serveis  cli-win11  cli-linux
+  .10    .13      .14     .11/.12/.15       .20/.21          DHCP       DHCP
 ```
 
-**Orden para arrancar:** primero el **router** (sin él nadie tiene red), después el **NAS** (destino de las copias) y luego lo que toque. Con 32 GB de RAM caben las 9 VM a la vez con un router (sin contar `dades` y `serveis`, que se añadieron el 23/11 con 1 GB cada una) ([T7](07-rendimiento.md)).
+**Orden para arrancar:** primero el **router** (sin él nadie tiene red), después el **NAS** (destino de las copias) y luego lo que toque. Con 32 GB de RAM caben las 9 VM a la vez con un router (sin contar `srv-dades` y `srv-serveis`, que se añadieron el 23/11 con 1 GB cada una) ([T7](07-rendimiento.md)).
 
 ## Routers (solo uno encendido a la vez)
 
@@ -87,7 +87,7 @@ Los tres hacen lo mismo con la misma IP (192.168.27.1), para poder compararlos. 
 - Proxmox VE **9.2.32** (actualizado), 4 GB cada nodo, IP fijas **.11, .12, .15**, puente `vmbr0`. Repositorio `pve-no-subscription`.
 - Usuario **`alvaro@pve`** con rol `Administrator` (además de `root@pam`). Web en `https://192.168.27.11:8006`.
 - **Clúster `clusteriso`** con 3 nodos. **Quórum probado:** con 2 de 3 sigue funcionando; con 1 de 3 se bloquea (`Activity blocked`).
-- **Solo para demostrar el clúster** (23/11, a petición del profesorado): ya no tienen máquinas dentro. El contenedor y la VM de la prueba se borraron y ahora son `dades` y `serveis`, VM normales de VirtualBox.
+- **Solo para demostrar el clúster** (23/11, a petición del profesorado): ya no tienen máquinas dentro. El contenedor y la VM de la prueba se borraron y ahora son `srv-dades` y `srv-serveis`, VM normales de VirtualBox.
 - **Migraciones medidas (21/11, antes de borrarlas):** contenedor 25 s (parado ~22 s, porque se reinicia); VM **en caliente** 37 s (parada solo **42 ms**). Copian el disco entero (4 GB) porque el almacenamiento es local.
 - **Copias:** configuración de cada nodo al NAS (diaria, 03:00, 24 KB) + una imagen `vzdump` del contenedor (159 MB).
 
@@ -95,17 +95,18 @@ Los tres hacen lo mismo con la misma IP (192.168.27.1), para poder compararlos. 
 
 **Qué enseñar:** `pvecm status` (3 votos, `Quorate`), la web con los tres nodos en **Datacenter**. `pct list` y `qm list` salen vacíos: es lo esperado.
 
-## `dades` y `serveis` · dos Debian independientes
+## `srv-dades` y `srv-serveis` · dos Debian independientes
 
-→ [05-proxmox, apartado 5 bis](05-proxmox.md#5-bis-las-dos-máquinas-independientes-dades-y-serveis)
+→ [05-proxmox, apartado 5 bis](05-proxmox.md#5-bis-las-dos-máquinas-independientes-srv-dades-y-srv-serveis)
 
 - Debian 13.8 sin escritorio, 1 vCPU, 1 GB, disco 10 GB, tarjeta `virtio`. IP fijas **.20** y **.21**.
 - Usuario `alvaro` con `sudo`; `root` bloqueado. SSH.
 - Instaladas **sin preguntas** con un fichero de respuestas (*preseed*).
+- **RAID según su función** ([06-raid](06-raid.md#3-bis-raid-en-srv-dades-y-srv-serveis)): `srv-dades` guarda datos → **RAID 5** de 3 discos en `/srv/raid5`; `srv-serveis` → **RAID 1** (espejo) de 2 discos en `/srv/raid1`. Probado rompiendo un disco: los datos siguen y se reconstruye en 5-6 s.
 
 **Qué decir:** «Antes eran un contenedor y una VM dentro de Proxmox. Los profesores pidieron que fueran máquinas independientes, porque meter una VM dentro de otra VM (virtualización anidada) va más lenta y no aporta nada aquí. Proxmox se queda para el clúster.»
 
-**Qué enseñar:** `ip -br a`, `ip r`, `cat /etc/resolv.conf`, `sudo apt update`.
+**Qué enseñar:** `ip -br a`, `ip r`, `cat /etc/resolv.conf`, `sudo apt update`, `cat /proc/mdstat` (`[UUU]` / `[UU]`).
 
 ## `cli-win11` · cliente Windows 11
 

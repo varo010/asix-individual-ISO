@@ -101,6 +101,47 @@ El RAID **se reconstruye solo** (`recovery`) y en menos de 25 segundos vuelve a 
 
 **Qué elegiría en la empresa:** RAID 1 para el disco del sistema de los servidores y RAID 5 (o RAID 6 / RAIDZ2 si hay muchos discos) para los datos. **Nunca RAID 0 para datos importantes.** Y siempre, además, copias en el NAS.
 
+## 3 bis. RAID en `srv-dades` y `srv-serveis`
+
+Las dos Debian independientes (23/11) llevan cada una un RAID **elegido según su función**, aplicando la tabla de arriba:
+
+| Máquina | Para qué sirve | RAID | Discos | Espacio útil | Montado en | Por qué |
+|---|---|---|---|---|---|---|
+| `srv-dades` | Guardar datos | **RAID 5** | 3 de 1 GB (`sdb`, `sdc`, `sdd`) | **2 GB** (se pierde 1 disco en paridad) | `/srv/raid5` | Aguanta que falle un disco y aprovecha más espacio que un espejo: lo normal para datos |
+| `srv-serveis` | Dar servicios | **RAID 1** | 2 de 1 GB (`sdb`, `sdc`) | **1 GB** (la mitad) | `/srv/raid1` | Espejo: sencillo y seguro, para lo que no puede pararse |
+
+**Pasos (en `srv-dades`; en `srv-serveis` igual con `--level=1`, 2 discos y `/srv/raid1`):**
+
+1. En VirtualBox, con la VM apagada: crear los discos (`VBoxManage createmedium disk --size 1024`) y conectarlos al controlador SATA (`VBoxManage storageattach`).
+2. Dentro de Debian:
+
+```
+sudo apt install mdadm
+sudo mdadm --create /dev/md0 --level=5 --raid-devices=3 /dev/sdb /dev/sdc /dev/sdd
+sudo mkfs.ext4 -L raid5 /dev/md0                      # darle formato
+sudo mkdir -p /srv/raid5
+sudo mdadm --detail --scan | sudo tee -a /etc/mdadm/mdadm.conf   # que se monte el RAID al arrancar
+sudo update-initramfs -u
+echo "UUID=$(sudo blkid -s UUID -o value /dev/md0) /srv/raid5 ext4 defaults,nofail 0 2" | sudo tee -a /etc/fstab
+sudo mount /srv/raid5
+```
+
+- **`mdadm.conf` + `update-initramfs`:** guardan cómo es el RAID, para que al arrancar se vuelva a montar como `md0`.
+- **`fstab` con el UUID y `nofail`:** se monta solo al arrancar; `nofail` hace que, si el RAID fallara, la máquina arranque igual en vez de quedarse parada.
+
+**Pruebas:**
+
+| Prueba | `srv-dades` (RAID 5) | `srv-serveis` (RAID 1) |
+|---|---|---|
+| Reiniciar la máquina | Vuelve `[UUU]` y montado | Vuelve `[UU]` y montado |
+| Romper un disco (`mdadm --fail` y `--remove /dev/sdc`) | `active, degraded`: sigue funcionando con 2 discos | `[U_]`, `active, degraded` |
+| Fichero de 200 MB con su huella (`sha256sum`) | **Intacto** con un disco menos | **Intacto** |
+| Poner el disco otra vez (`mdadm --add`) | Reconstruido `[UUU]` en **6 s** | Reconstruido `[UU]` en **5 s** |
+
+**Comprobar el estado:** `cat /proc/mdstat` (cada `U` es un disco funcionando; un `_` es un disco que falta) y `sudo mdadm --detail /dev/md0`.
+
+**Recordatorio:** un RAID **no es una copia**: si se borra un fichero, se borra en todos los discos a la vez.
+
 ## 4. Ampliación: espejo entre dos equipos
 
 **La idea:** un RAID 1 normal protege de que se rompa **un disco**, pero si se rompe **el servidor entero** (placa, fuente, o se apaga), los dos discos se quedan dentro y no hay datos. Un **espejo entre dos equipos** guarda una copia exacta en **otro ordenador** a la vez, por la red.

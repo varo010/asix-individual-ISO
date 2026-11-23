@@ -4,7 +4,7 @@ RA: FDM RA1. Enunciado, Tasca 0 individual: preparar un entorno de pruebas en mi
 
 ## Lo que pide la rúbrica
 
-- [x] Preparar el entorno propio de pruebas (13 VM creadas: 10 el 15/11, `pve3` el 18/11 y `dades` y `serveis` el 23/11).
+- [x] Preparar el entorno propio de pruebas (13 VM creadas: 10 el 15/11, `pve3` el 18/11 y `srv-dades` y `srv-serveis` el 23/11).
 - [x] Identificar los recursos físicos y justificar sus limitaciones.
 - [x] Ampliación: documentarlo en Markdown y Git ([repositorio en GitHub](https://github.com/varo010/asix-individual-ISO)).
 
@@ -36,19 +36,19 @@ Discos **dinámicos**: el tamaño es el máximo, pero solo ocupan lo que se escr
 | `pve3` | Nodo Proxmox 3 (añadido el 18/11) | Proxmox VE 9.2 (actualizado a 9.2.32) | 2 | 4 GB | 32 GB | LAN | Instalado; en el clúster `clusteriso` (T5) |
 | `srv-dc` | Dominio | Windows Server 2025 (evaluación 180 días) | 2 | 4 GB | 50 GB | LAN | Instalado y configurado: dominio `iso27.lan`, copias automáticas (T5) |
 | `srv-linux` | Servidor de infraestructura (y RAID de la T6) | Debian 13.7 sin escritorio | 1 | 1 GB | 10 GB + 7 discos de 1 GB (RAID) | LAN (tarjeta `virtio` desde el 21/11) | Instalado y configurado: IP fija .14, RAID 0/1/5 (T6), copias automáticas (T5) |
-| `dades` | Debian independiente (añadida el 23/11) | Debian 13.8 sin escritorio | 1 | 1 GB | 10 GB | LAN (`virtio`) | Instalada y configurada: IP fija .20 |
-| `serveis` | Debian independiente (añadida el 23/11) | Debian 13.8 sin escritorio | 1 | 1 GB | 10 GB | LAN (`virtio`) | Instalada y configurada: IP fija .21 |
+| `srv-dades` | Debian independiente (añadida el 23/11) | Debian 13.8 sin escritorio | 1 | 1 GB | 10 GB + 3 discos de 1 GB (RAID 5) | LAN (`virtio`) | Instalada y configurada: IP fija .20, RAID 5 (T6) |
+| `srv-serveis` | Debian independiente (añadida el 23/11) | Debian 13.8 sin escritorio | 1 | 1 GB | 10 GB + 2 discos de 1 GB (RAID 1) | LAN (`virtio`) | Instalada y configurada: IP fija .21, RAID 1 (T6) |
 | `cli-win11` | Cliente Windows | Windows 11 Pro (ISO oficial en español, compilación 26300) | 2 | 4 GB | 64 GB (TPM 2.0, UEFI, Secure Boot) | LAN | Instalado y configurado; copias automáticas (T5) |
 | `cli-linux` | Cliente GNU/Linux | Ubuntu Desktop 26.04.1 LTS | 4 | 4 GB (con 2 vCPU y 3 GB iba al 100 %) | 25 GB | LAN | Instalado (18/11) y configurado; copias automáticas (T5) |
 
 Total si estuvieran todas encendidas: **unos 38 GB de RAM y 23 vCPU**.
 
-Dentro de los nodos Proxmox hubo un contenedor y una VM Debian para medir la migración (T5). El 23/11, a petición del profesorado, se borraron y se crearon `dades` y `serveis` como VM independientes: los nodos Proxmox quedan solo para el clúster.
+Dentro de los nodos Proxmox hubo un contenedor y una VM Debian para medir la migración (T5). El 23/11, a petición del profesorado, se borraron y se crearon `srv-dades` y `srv-serveis` como VM independientes: los nodos Proxmox quedan solo para el clúster.
 
 
 ### Cómo se crearon las VM y de dónde salen las imágenes
 
-- Las 10 primeras VM se crearon el 15/11/2026, `pve3` el 18/11/2026 y `dades` y `serveis` el 23/11/2026, con `VBoxManage` (VirtualBox por comandos), todas en el grupo `ISO-individual`. Así solo se crea el «hardware» virtual: la instalación se hace a mano dentro de cada VM (T5).
+- Las 10 primeras VM se crearon el 15/11/2026, `pve3` el 18/11/2026 y `srv-dades` y `srv-serveis` el 23/11/2026, con `VBoxManage` (VirtualBox por comandos), todas en el grupo `ISO-individual`. Así solo se crea el «hardware» virtual: la instalación se hace a mano dentro de cada VM (T5).
 - Antes de poner una ISO en una VM, calculo su SHA256 con `sha256sum` (una «huella» del fichero: si cambia un solo bit, la huella es otra) y lo comparo con el que publica el fabricante. Solo se usan las que coinciden. Resultado: [evidencias/t5-isos-sha256-20261116.txt](../evidencias/t5-isos-sha256-20261116.txt).
 - **Windows Server 2025 (evaluación):** Microsoft no publica la huella (hash). Se acepta porque viene de su servidor oficial por HTTPS y la descarga está completa; se apunta su huella para demostrar más adelante que es la misma.
 - **Windows 11:** la `w11.iso` que había en el disco **no se usa**: no se sabe de dónde salió y es una versión de 2023. El 16/11/2026 descargué la actual (español, 64 bits) de <https://www.microsoft.com/es-es/software-download/windows11>. Microsoft publica su huella en la misma página («Verificar la descarga») y **coincide**: `98287037…72a14f9a`.
